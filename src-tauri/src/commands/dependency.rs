@@ -1,11 +1,13 @@
-use crate::state::{DependencyStatus, UpdateCheckResult};
+use crate::state::{AppState, DependencyStatus, UpdateCheckResult};
+use std::path::Path;
 use std::process::Command;
+use tauri::State;
 
-/// Check if yt-dlp and ffmpeg are installed and available in PATH
+/// Check if the bundled yt-dlp and ffmpeg binaries are present and functional.
 #[tauri::command]
-pub async fn check_dependencies() -> Result<DependencyStatus, String> {
-    let yt_dlp = check_binary("yt-dlp", &["--version"]);
-    let ffmpeg = check_binary("ffmpeg", &["-version"]);
+pub async fn check_dependencies(state: State<'_, AppState>) -> Result<DependencyStatus, String> {
+    let yt_dlp = run_version_check(&state.yt_dlp_path, &["--version"]);
+    let ffmpeg = run_version_check(&state.ffmpeg_path, &["-version"]);
 
     Ok(DependencyStatus {
         yt_dlp_installed: yt_dlp.is_some(),
@@ -15,9 +17,13 @@ pub async fn check_dependencies() -> Result<DependencyStatus, String> {
     })
 }
 
-/// Try to run a binary and return its version string
-fn check_binary(name: &str, args: &[&str]) -> Option<String> {
-    let mut cmd = Command::new(name);
+/// Try to run a binary at an explicit path and return its version string.
+fn run_version_check(path: &str, args: &[&str]) -> Option<String> {
+    if path.is_empty() || !Path::new(path).exists() {
+        return None;
+    }
+
+    let mut cmd = Command::new(path);
     cmd.args(args);
 
     #[cfg(target_os = "windows")]
@@ -27,272 +33,28 @@ fn check_binary(name: &str, args: &[&str]) -> Option<String> {
     }
 
     match cmd.output() {
-        Ok(output) => {
-            if output.status.success() {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let version = stdout.lines().next().unwrap_or("").trim().to_string();
-                Some(version)
-            } else {
-                None
-            }
+        Ok(output) if output.status.success() => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let version = stdout.lines().next().unwrap_or("").trim().to_string();
+            Some(version)
         }
-        Err(_) => {
-            #[cfg(target_os = "linux")]
-            {
-                // Check ~/.local/bin/ in case user installed via pip --user or curl
-                if let Some(home) = dirs::home_dir() {
-                    let local_path = home.join(".local").join("bin").join(name);
-                    if local_path.exists() {
-                        let mut fallback_cmd = Command::new(&local_path);
-                        fallback_cmd.args(args);
-                        if let Ok(output) = fallback_cmd.output() {
-                            if output.status.success() {
-                                let stdout = String::from_utf8_lossy(&output.stdout);
-                                let version = stdout.lines().next().unwrap_or("").trim().to_string();
-                                return Some(version);
-                            }
-                        }
-                    }
-                }
-            }
-            None
-        }
-    }
-}
-
-/// Install yt-dlp using the appropriate method for the current OS
-#[tauri::command]
-pub async fn install_yt_dlp() -> Result<String, String> {
-    #[cfg(target_os = "macos")]
-    {
-        // Try brew first
-        let output = Command::new("brew")
-            .args(["install", "yt-dlp"])
-            .output()
-            .map_err(|e| format!("Failed to run brew: {}", e))?;
-
-        if output.status.success() {
-            return Ok("yt-dlp installed successfully via Homebrew".to_string());
-        }
-
-        // Fallback to pip
-        let output = Command::new("pip3")
-            .args(["install", "yt-dlp"])
-            .output()
-            .map_err(|e| format!("Failed to run pip3: {}", e))?;
-
-        if output.status.success() {
-            return Ok("yt-dlp installed successfully via pip".to_string());
-        }
-
-        Err(format!(
-            "Failed to install yt-dlp. Error: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ))
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-
-        // Try winget first
-        let mut winget_cmd = Command::new("winget");
-        winget_cmd.args(["install", "yt-dlp.yt-dlp"]);
-        winget_cmd.creation_flags(0x08000000);
-        let output = winget_cmd.output();
-
-        if let Ok(output) = output {
-            if output.status.success() {
-                return Ok("yt-dlp installed successfully via winget".to_string());
-            }
-        }
-
-        // Fallback to pip
-        let mut pip_cmd = Command::new("pip");
-        pip_cmd.args(["install", "yt-dlp"]);
-        pip_cmd.creation_flags(0x08000000);
-        let output = pip_cmd
-            .output()
-            .map_err(|e| format!("Failed to run pip: {}", e))?;
-
-        if output.status.success() {
-            return Ok("yt-dlp installed successfully via pip".to_string());
-        }
-
-        Err(format!(
-            "Failed to install yt-dlp. Error: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ))
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        // 1. Direct binary download via curl to ~/.local/bin/yt-dlp (Guaranteed latest official release)
-        if let Some(home) = dirs::home_dir() {
-            let local_bin = home.join(".local").join("bin");
-            let _ = std::fs::create_dir_all(&local_bin);
-            let target_path = local_bin.join("yt-dlp");
-            let target_str = target_path.to_string_lossy().to_string();
-
-            if let Ok(output) = Command::new("curl")
-                .args([
-                    "-L",
-                    "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp",
-                    "-o",
-                    &target_str,
-                ])
-                .output()
-            {
-                if output.status.success() {
-                    let _ = Command::new("chmod").args(["a+rx", &target_str]).output();
-                    return Ok(format!(
-                        "yt-dlp downloaded successfully to {}",
-                        target_str
-                    ));
-                }
-            }
-        }
-
-        // 2. Try pip3 (with --break-system-packages for Debian 12+/Ubuntu 23+)
-        if let Ok(output) = Command::new("pip3")
-            .args(["install", "--user", "--break-system-packages", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp installed successfully via pip3".to_string());
-            }
-        }
-
-        // Standard pip3 fallback
-        if let Ok(output) = Command::new("pip3")
-            .args(["install", "--user", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp installed successfully via pip3".to_string());
-            }
-        }
-
-        // 3. Try pipx
-        if let Ok(output) = Command::new("pipx")
-            .args(["install", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp installed successfully via pipx".to_string());
-            }
-        }
-
-        // 4. Try dnf / pacman / apt as system package manager fallbacks
-        if let Ok(output) = Command::new("sudo")
-            .args(["pacman", "-S", "--noconfirm", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp installed successfully via pacman".to_string());
-            }
-        }
-
-        if let Ok(output) = Command::new("sudo")
-            .args(["dnf", "install", "-y", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp installed successfully via dnf".to_string());
-            }
-        }
-
-        if let Ok(output) = Command::new("sudo")
-            .args(["apt", "install", "-y", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp installed successfully via apt".to_string());
-            }
-        }
-
-        Err("Failed to install yt-dlp. Tried direct download, pip3, pipx, pacman, dnf, and apt. Please install manually.".to_string())
-    }
-}
-
-/// Install ffmpeg using the appropriate method for the current OS
-#[tauri::command]
-pub async fn install_ffmpeg() -> Result<String, String> {
-    #[cfg(target_os = "macos")]
-    {
-        let output = Command::new("brew")
-            .args(["install", "ffmpeg"])
-            .output()
-            .map_err(|e| format!("Failed to run brew: {}", e))?;
-
-        if output.status.success() {
-            return Ok("ffmpeg installed successfully via Homebrew".to_string());
-        }
-
-        Err(format!(
-            "Failed to install ffmpeg. Error: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ))
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        let mut winget_cmd = Command::new("winget");
-        winget_cmd.args(["install", "Gyan.FFmpeg"]);
-        winget_cmd.creation_flags(0x08000000);
-        let output = winget_cmd.output();
-
-        if let Ok(output) = output {
-            if output.status.success() {
-                return Ok("ffmpeg installed successfully via winget".to_string());
-            }
-        }
-
-        Err("Failed to install ffmpeg. Please install manually from https://ffmpeg.org/download.html".to_string())
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        // Try apt first
-        let output = Command::new("sudo")
-            .args(["apt", "install", "-y", "ffmpeg"])
-            .output();
-
-        if let Ok(output) = output {
-            if output.status.success() {
-                return Ok("ffmpeg installed successfully via apt".to_string());
-            }
-        }
-
-        // Try dnf
-        let output = Command::new("sudo")
-            .args(["dnf", "install", "-y", "ffmpeg"])
-            .output();
-
-        if let Ok(output) = output {
-            if output.status.success() {
-                return Ok("ffmpeg installed successfully via dnf".to_string());
-            }
-        }
-
-        Err("Failed to install ffmpeg. Please install using your package manager.".to_string())
+        _ => None,
     }
 }
 
 /// Check if a newer version of yt-dlp is available.
-/// Compares the locally installed version against the latest GitHub release.
+/// Compares the locally bundled version against the latest GitHub release.
 #[tauri::command]
-pub async fn check_yt_dlp_update() -> Result<UpdateCheckResult, String> {
-    // Get current installed version
-    let current = check_binary("yt-dlp", &["--version"])
-        .ok_or_else(|| "yt-dlp is not installed".to_string())?;
+pub async fn check_yt_dlp_update(
+    state: State<'_, AppState>,
+) -> Result<UpdateCheckResult, String> {
+    // Get current bundled version
+    let current = run_version_check(&state.yt_dlp_path, &["--version"])
+        .ok_or_else(|| "Could not determine bundled yt-dlp version".to_string())?;
 
     // Fetch the latest release tag from GitHub API
     let latest = fetch_latest_yt_dlp_version().await?;
 
-    // Compare: versions are in YYYY.MM.DD or YYYY.MM.DD.HHMMSS format.
-    // A simple string comparison works because the format is lexicographically ordered.
     let update_available = normalize_version(&latest) > normalize_version(&current);
 
     Ok(UpdateCheckResult {
@@ -302,11 +64,10 @@ pub async fn check_yt_dlp_update() -> Result<UpdateCheckResult, String> {
     })
 }
 
-/// Fetch the latest yt-dlp version string from GitHub releases API
+/// Fetch the latest yt-dlp version string from GitHub releases API.
 async fn fetch_latest_yt_dlp_version() -> Result<String, String> {
     let url = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
 
-    // Use curl which is available on all target platforms
     let mut cmd = Command::new("curl");
     cmd.args(["-s", "-A", "yt-downloader-app/1.0", url]);
 
@@ -326,8 +87,6 @@ async fn fetch_latest_yt_dlp_version() -> Result<String, String> {
 
     let body = String::from_utf8_lossy(&output.stdout);
 
-    // Parse "tag_name" from JSON manually to avoid adding serde_json dep here
-    // JSON looks like: {..., "tag_name": "2026.08.19", ...}
     let tag = body
         .split("\"tag_name\"")
         .nth(1)
@@ -339,7 +98,6 @@ async fn fetch_latest_yt_dlp_version() -> Result<String, String> {
 }
 
 /// Normalize a version string: strip leading "stable@", "nightly@" etc.
-/// e.g. "stable@2026.08.19" → "2026.08.19", "2026.07.04" → "2026.07.04"
 fn normalize_version(v: &str) -> String {
     if let Some(pos) = v.find('@') {
         v[pos + 1..].to_string()
@@ -348,173 +106,65 @@ fn normalize_version(v: &str) -> String {
     }
 }
 
-/// Update yt-dlp using the appropriate package manager for the current OS.
-/// Returns a success message or an error.
+/// Update the bundled yt-dlp binary by downloading the latest release from GitHub
+/// and replacing the current binary file.
 #[tauri::command]
-pub async fn update_yt_dlp() -> Result<String, String> {
-    #[cfg(target_os = "macos")]
-    {
-        // Prefer brew if available
-        let brew_check = Command::new("which").arg("brew").output();
-        if brew_check.map(|o| o.status.success()).unwrap_or(false) {
-            let output = Command::new("brew")
-                .args(["upgrade", "yt-dlp"])
-                .output()
-                .map_err(|e| format!("brew upgrade failed: {}", e))?;
-
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via Homebrew".to_string());
-            }
-            // brew upgrade returns non-zero if already up-to-date; check stderr
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            if stderr.contains("already installed") || stderr.contains("up-to-date") {
-                return Ok("yt-dlp is already up to date".to_string());
-            }
-        }
-
-        // Fallback: pip with --break-system-packages
-        let output = Command::new("pip3")
-            .args(["install", "-U", "--break-system-packages", "yt-dlp"])
-            .output()
-            .map_err(|e| format!("pip3 install failed: {}", e))?;
-
-        if output.status.success() {
-            return Ok("yt-dlp updated successfully via pip".to_string());
-        }
-
-        Err(format!(
-            "Update failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ))
+pub async fn update_yt_dlp(state: State<'_, AppState>) -> Result<String, String> {
+    let current_path = state.yt_dlp_path.clone();
+    if current_path.is_empty() {
+        return Err("Could not determine bundled yt-dlp path".to_string());
     }
+
+    #[cfg(target_os = "macos")]
+    let download_url =
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos";
+    #[cfg(target_os = "windows")]
+    let download_url = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
+    #[cfg(target_os = "linux")]
+    let download_url =
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux";
+
+    let tmp_path = format!("{}.tmp", current_path);
+
+    let mut curl_cmd = Command::new("curl");
+    curl_cmd.args(["-fsSL", "-o", &tmp_path, download_url]);
 
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-
-        // Try yt-dlp's built-in self-updater first
-        let mut self_update_cmd = Command::new("yt-dlp");
-        self_update_cmd.args(["-U"]);
-        self_update_cmd.creation_flags(0x08000000);
-        if let Ok(output) = self_update_cmd.output() {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via yt-dlp -U".to_string());
-            }
-        }
-
-        // Try winget
-        let mut cmd = Command::new("winget");
-        cmd.args(["upgrade", "yt-dlp.yt-dlp", "--accept-package-agreements", "--accept-source-agreements"]);
-        cmd.creation_flags(0x08000000);
-        if let Ok(output) = cmd.output() {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via winget".to_string());
-            }
-        }
-
-        // Fallback: pip
-        let mut pip_cmd = Command::new("pip");
-        pip_cmd.args(["install", "-U", "yt-dlp"]);
-        pip_cmd.creation_flags(0x08000000);
-        let output = pip_cmd.output();
-
-        if let Ok(output) = output {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via pip".to_string());
-            }
-        }
-
-        Err("Failed to update yt-dlp via self-update (-U), winget, or pip.".to_string())
+        curl_cmd.creation_flags(0x08000000);
     }
 
-    #[cfg(target_os = "linux")]
+    let output = curl_cmd
+        .output()
+        .map_err(|e| format!("Download failed: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "Download failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    #[cfg(unix)]
     {
-        // 1. Direct binary download via curl to ~/.local/bin/yt-dlp (Guaranteed latest official release)
-        if let Some(home) = dirs::home_dir() {
-            let local_bin = home.join(".local").join("bin");
-            let _ = std::fs::create_dir_all(&local_bin);
-            let target_path = local_bin.join("yt-dlp");
-            let target_str = target_path.to_string_lossy().to_string();
-
-            if let Ok(output) = Command::new("curl")
-                .args([
-                    "-L",
-                    "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp",
-                    "-o",
-                    &target_str,
-                ])
-                .output()
-            {
-                if output.status.success() {
-                    let _ = Command::new("chmod").args(["a+rx", &target_str]).output();
-                    return Ok(format!(
-                        "yt-dlp updated to latest release in {}",
-                        target_str
-                    ));
-                }
-            }
-        }
-
-        // 2. Try yt-dlp's built-in self-updater
-        if let Ok(output) = Command::new("yt-dlp").arg("-U").output() {
-            if output.status.success() {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                if stdout.contains("is up to date") || stdout.contains("Updated yt-dlp") {
-                    return Ok("yt-dlp updated successfully via yt-dlp -U".to_string());
-                }
-                return Ok("yt-dlp self-update completed".to_string());
-            }
-        }
-
-        // 3. Try pip3 with --break-system-packages
-        if let Ok(output) = Command::new("pip3")
-            .args(["install", "-U", "--user", "--break-system-packages", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via pip3".to_string());
-            }
-        }
-
-        // 4. Try standard pip3
-        if let Ok(output) = Command::new("pip3")
-            .args(["install", "-U", "--user", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via pip3".to_string());
-            }
-        }
-
-        // 5. Try pipx
-        if let Ok(output) = Command::new("pipx")
-            .args(["upgrade", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via pipx".to_string());
-            }
-        }
-
-        // 6. Try pacman / dnf as package manager fallbacks
-        if let Ok(output) = Command::new("sudo")
-            .args(["pacman", "-Sy", "--noconfirm", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via pacman".to_string());
-            }
-        }
-
-        if let Ok(output) = Command::new("sudo")
-            .args(["dnf", "upgrade", "-y", "yt-dlp"])
-            .output()
-        {
-            if output.status.success() {
-                return Ok("yt-dlp updated successfully via dnf".to_string());
-            }
-        }
-
-        Err("Failed to update yt-dlp via direct download, yt-dlp -U, pip3, pipx, pacman, or dnf.".to_string())
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&tmp_path)
+            .map_err(|e| format!("Cannot read temp file permissions: {}", e))?
+            .permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&tmp_path, perms)
+            .map_err(|e| format!("Cannot set executable bit: {}", e))?;
     }
+
+    std::fs::rename(&tmp_path, &current_path)
+        .map_err(|e| format!("Failed to replace binary: {}", e))?;
+
+    let new_version = run_version_check(&current_path, &["--version"])
+        .unwrap_or_else(|| "unknown".to_string());
+
+    Ok(format!(
+        "yt-dlp updated successfully to {}",
+        new_version
+    ))
 }
