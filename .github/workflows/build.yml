@@ -77,16 +77,16 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'YT Downloader ${{ github.ref_name }}'
           releaseBody: |
-            ## Değişiklikler
+            ## What's Changed
 
-            Bu sürümdeki değişiklikler için commit geçmişine bakın.
+            See commit history for a full list of changes in this release.
 
-            ## Kurulum
+            ## Installation
 
-            Aşağıdan işletim sisteminize uygun installer'ı indirin:
-            - **macOS**: `.dmg` dosyasını indirip açın
-            - **Windows**: `.msi` veya `.exe` dosyasını çalıştırın
-            - **Linux**: `.AppImage` dosyasını çalıştırın
+            Download the installer corresponding to your operating system below:
+            - **macOS**: Download and open the `.dmg` file.
+            - **Windows**: Run the `.msi` or `.exe` installer.
+            - **Linux**: Run the `.AppImage` file.
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
