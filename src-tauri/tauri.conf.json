@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "YT Downloader",
-  "version": "1.0.5",
-  "identifier": "com.ytdownloader.app",
+  "version": "1.0.6",
+  "identifier": "com.ytdownloader.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

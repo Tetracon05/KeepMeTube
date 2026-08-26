@@ -232,9 +232,11 @@ pub async fn start_drag(
 
     let app = window.app_handle().clone();
     app.run_on_main_thread(move || {
-        let _item = drag::DragItem::Files(vec![canonical]);
+        #[allow(unused_variables)]
+        let item = drag::DragItem::Files(vec![canonical]);
         // 32x32 white PNG bytes as a minimal drag icon
-        let _icon = drag::Image::Raw(vec![]);
+        #[allow(unused_variables)]
+        let icon = drag::Image::Raw(vec![]);
 
         #[cfg(target_os = "windows")]
         let result = drag::start_drag(

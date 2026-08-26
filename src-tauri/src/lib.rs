@@ -44,11 +44,11 @@ pub fn run() {
             // Create data directory if needed
             std::fs::create_dir_all(&data_dir).ok();
 
-            // Resolve bundled binary paths (exit early if missing — should never happen in prod)
+            // Resolve bundled binary paths with fallback to prevent startup panics
             let yt_dlp_path = binary_resolver::resolve_sidecar_path(app.handle(), "yt-dlp")
-                .expect("yt-dlp binary not found in app bundle. Run scripts/download-binaries.sh before building.");
+                .unwrap_or_else(|_| std::path::PathBuf::from("yt-dlp"));
             let ffmpeg_path = binary_resolver::resolve_sidecar_path(app.handle(), "ffmpeg")
-                .expect("ffmpeg binary not found in app bundle. Run scripts/download-binaries.sh before building.");
+                .unwrap_or_else(|_| std::path::PathBuf::from("ffmpeg"));
 
             // Load persisted downloads
             let downloads = store::load_downloads(&data_dir);

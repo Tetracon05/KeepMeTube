@@ -1,76 +1,99 @@
-//! Resolves the path to a bundled sidecar binary (yt-dlp or ffmpeg).
+//! Resolves the path to bundled sidecar binaries (yt-dlp and ffmpeg).
 //!
-//! Tauri bundles external binaries using the naming convention:
-//!   {name}_{target-triple}[.exe]
-//!
-//! At runtime we locate the binary inside the app's resource directory,
-//! ensure it is executable (Unix), and return the absolute path so that
-//! `tokio::process::Command` can invoke it directly — no PATH dependency.
+//! Tries multiple candidate locations in order:
+//! 1. Resource directory (`Contents/Resources` on macOS, resource path on Windows/Linux)
+//! 2. App executable directory (`Contents/MacOS` on macOS, next to exe on Windows/Linux)
+//! 3. Current working directory / dev tree (`src-tauri/binaries` or `binaries`)
+//! 4. System PATH fallback (ensures the app never panics at startup)
 
 use std::path::PathBuf;
 use tauri::AppHandle;
 use tauri::Manager;
 
-/// Returns the absolute path to a bundled sidecar binary.
-///
-/// # Arguments
-/// * `app`  - The Tauri `AppHandle` used to locate the resource directory.
-/// * `name` - The binary name without extension or target suffix (e.g. `"yt-dlp"`).
-///
-/// # Errors
-/// Returns an error string if the resource directory cannot be resolved or the
-/// binary file does not exist.
+/// Resolves the absolute path to a bundled sidecar binary.
 pub fn resolve_sidecar_path(app: &AppHandle, name: &str) -> Result<PathBuf, String> {
-    // Determine the target triple this binary was compiled for.
-    // `std::env::consts` gives us the OS and architecture at compile time.
     let target_triple = get_target_triple();
 
-    // Build the platform-specific filename that Tauri produces.
-    // Tauri's externalBin uses dash-separated naming: {name}-{target-triple}[.exe]
     #[cfg(target_os = "windows")]
-    let filename = format!("{}-{}.exe", name, target_triple);
+    let filename_with_triple = format!("{}-{}.exe", name, target_triple);
     #[cfg(not(target_os = "windows"))]
-    let filename = format!("{}-{}", name, target_triple);
+    let filename_with_triple = format!("{}-{}", name, target_triple);
 
-    // Resolve against the app's resource directory (where `externalBin` files land).
-    let resource_dir = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Could not locate resource directory: {}", e))?;
+    #[cfg(target_os = "windows")]
+    let plain_name = format!("{}.exe", name);
+    #[cfg(not(target_os = "windows"))]
+    let plain_name = name.to_string();
 
-    let binary_path = resource_dir.join("binaries").join(&filename);
+    let mut candidates: Vec<PathBuf> = Vec::new();
 
-    if !binary_path.exists() {
-        return Err(format!(
-            "Bundled binary not found: {} (expected at {})",
-            filename,
-            binary_path.display()
-        ));
+    // 1. Resource dir candidates
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        candidates.push(resource_dir.join("binaries").join(&filename_with_triple));
+        candidates.push(resource_dir.join("binaries").join(&plain_name));
+        candidates.push(resource_dir.join(&filename_with_triple));
+        candidates.push(resource_dir.join(&plain_name));
     }
 
-    // On Unix systems ensure the executable bit is set.
-    // The bit may be lost if the binary was extracted from a zip/tar without
-    // preserving permissions.
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = std::fs::metadata(&binary_path)
-            .map_err(|e| format!("Cannot read permissions for {}: {}", filename, e))?
-            .permissions();
-        if perms.mode() & 0o111 == 0 {
-            perms.set_mode(perms.mode() | 0o755);
-            std::fs::set_permissions(&binary_path, perms)
-                .map_err(|e| format!("Cannot set executable bit on {}: {}", filename, e))?;
+    // 2. Current exe dir candidates (on macOS this is Contents/MacOS where Tauri puts sidecars)
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            candidates.push(exe_dir.join(&filename_with_triple));
+            candidates.push(exe_dir.join(&plain_name));
+            candidates.push(exe_dir.join("binaries").join(&filename_with_triple));
+            candidates.push(exe_dir.join("binaries").join(&plain_name));
+            // macOS bundle Contents/Resources check from Contents/MacOS
+            if let Some(contents_dir) = exe_dir.parent() {
+                let res_dir = contents_dir.join("Resources");
+                candidates.push(res_dir.join("binaries").join(&filename_with_triple));
+                candidates.push(res_dir.join("binaries").join(&plain_name));
+                candidates.push(res_dir.join(&filename_with_triple));
+                candidates.push(res_dir.join(&plain_name));
+            }
         }
     }
 
-    Ok(binary_path)
+    // 3. Dev / working directory candidates
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("src-tauri").join("binaries").join(&filename_with_triple));
+        candidates.push(cwd.join("binaries").join(&filename_with_triple));
+        candidates.push(cwd.join("src-tauri").join("binaries").join(&plain_name));
+        candidates.push(cwd.join("binaries").join(&plain_name));
+    }
+
+    // Check each candidate path
+    for candidate in &candidates {
+        if candidate.exists() && candidate.is_file() {
+            // Ensure executable permission on Unix
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if let Ok(metadata) = std::fs::metadata(candidate) {
+                    let mut perms = metadata.permissions();
+                    if perms.mode() & 0o111 == 0 {
+                        perms.set_mode(perms.mode() | 0o755);
+                        let _ = std::fs::set_permissions(candidate, perms);
+                    }
+                }
+            }
+            return Ok(candidate.clone());
+        }
+    }
+
+    // 4. Fallback: check if binary is available in system PATH instead of panicking
+    if let Ok(path_var) = std::env::var("PATH") {
+        for path_dir in std::env::split_paths(&path_var) {
+            let full_path = path_dir.join(&plain_name);
+            if full_path.exists() && full_path.is_file() {
+                return Ok(full_path);
+            }
+        }
+    }
+
+    // If still not found, return plain name so Command::new still attempts to run it
+    Ok(PathBuf::from(name))
 }
 
-/// Returns the Rust target triple for the current compilation target.
-/// This mirrors how `tauri-build` names sidecar binaries.
 fn get_target_triple() -> &'static str {
-    // These cfg values are set by the Rust compiler based on the build target.
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     return "aarch64-apple-darwin";
 
