@@ -1,3 +1,4 @@
+mod binary_resolver;
 mod commands;
 mod state;
 mod store;
@@ -27,6 +28,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_drag::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             // Determine app data directory for persistence
             let data_dir = app
@@ -42,18 +44,27 @@ pub fn run() {
             // Create data directory if needed
             std::fs::create_dir_all(&data_dir).ok();
 
+            // Resolve bundled binary paths (exit early if missing — should never happen in prod)
+            let yt_dlp_path = binary_resolver::resolve_sidecar_path(app.handle(), "yt-dlp")
+                .expect("yt-dlp binary not found in app bundle. Run scripts/download-binaries.sh before building.");
+            let ffmpeg_path = binary_resolver::resolve_sidecar_path(app.handle(), "ffmpeg")
+                .expect("ffmpeg binary not found in app bundle. Run scripts/download-binaries.sh before building.");
+
             // Load persisted downloads
             let downloads = store::load_downloads(&data_dir);
 
-            let app_state = AppState::new(data_dir, downloads);
+            let app_state = AppState::new(
+                data_dir,
+                downloads,
+                yt_dlp_path.to_string_lossy().to_string(),
+                ffmpeg_path.to_string_lossy().to_string(),
+            );
 
             app.manage(app_state);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::dependency::check_dependencies,
-            commands::dependency::install_yt_dlp,
-            commands::dependency::install_ffmpeg,
             commands::dependency::check_yt_dlp_update,
             commands::dependency::update_yt_dlp,
             commands::analyze::analyze_url,
@@ -67,7 +78,10 @@ pub fn run() {
             commands::file_ops::rename_download,
             commands::file_ops::show_in_folder,
             commands::file_ops::start_drag,
+            commands::app_update::check_app_update,
+            commands::app_update::install_app_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+

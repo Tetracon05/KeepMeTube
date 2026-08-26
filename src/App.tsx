@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "./hooks/useTheme";
 import { useDownloadStore } from "./store/useDownloadStore";
-import { DependencyCheck } from "./components/DependencyCheck";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { TopBar } from "./components/TopBar";
 import { DownloadList } from "./components/DownloadList";
@@ -10,16 +9,17 @@ import { RenameDialog } from "./components/RenameDialog";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { UpdateDialog } from "./components/UpdateDialog";
+import { AppUpdateDialog } from "./components/AppUpdateDialog";
 import { getSavedLanguage, initLanguage } from "./lib/i18n";
 import * as api from "./lib/tauri";
-import type { UpdateCheckResult } from "./types";
+import type { UpdateCheckResult, AppUpdateInfo } from "./types";
 
 // Initialize language from localStorage before first render
 initLanguage();
 
 function App() {
   const { mode, setMode } = useTheme();
-  const { dependencyChecked, loadDownloads, initEventListeners } = useDownloadStore();
+  const { loadDownloads, initEventListeners } = useDownloadStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Language selection: show if no language saved yet
@@ -27,65 +27,98 @@ function App() {
     return getSavedLanguage() !== null;
   });
 
-  // yt-dlp update check state
-  const [updateCheckDone, setUpdateCheckDone] = useState(false);
-  const [pendingUpdate, setPendingUpdate] = useState<UpdateCheckResult | null>(null);
+  // ── Step 1: App self-update check ─────────────────────────────────────────
+  const [appUpdateChecked, setAppUpdateChecked] = useState(false);
+  const [pendingAppUpdate, setPendingAppUpdate] = useState<AppUpdateInfo | null>(null);
 
-  // Run update check once dependencies are confirmed and we haven't checked yet
   useEffect(() => {
-    if (!dependencyChecked || updateCheckDone) return;
+    if (!languageSelected || appUpdateChecked) return;
+
+    api.checkAppUpdate()
+      .then((info) => {
+        if (info) {
+          setPendingAppUpdate(info);
+        } else {
+          setAppUpdateChecked(true);
+        }
+      })
+      .catch(() => {
+        // Network error or updater not configured — skip silently
+        setAppUpdateChecked(true);
+      });
+  }, [languageSelected]);
+
+  // ── Step 2: yt-dlp update check ───────────────────────────────────────────
+  const [ytDlpUpdateChecked, setYtDlpUpdateChecked] = useState(false);
+  const [pendingYtDlpUpdate, setPendingYtDlpUpdate] = useState<UpdateCheckResult | null>(null);
+
+  useEffect(() => {
+    if (!appUpdateChecked || ytDlpUpdateChecked) return;
 
     api.checkYtDlpUpdate()
       .then((result) => {
         if (result.update_available) {
-          setPendingUpdate(result);
+          setPendingYtDlpUpdate(result);
         } else {
-          setUpdateCheckDone(true);
+          setYtDlpUpdateChecked(true);
         }
       })
       .catch(() => {
-        // Network error or yt-dlp not installed — skip silently
-        setUpdateCheckDone(true);
+        setYtDlpUpdateChecked(true);
       });
-  }, [dependencyChecked]);
+  }, [appUpdateChecked]);
 
+  // ── Step 3: Load downloads once both checks are done ──────────────────────
   useEffect(() => {
-    if (dependencyChecked && updateCheckDone) {
+    if (appUpdateChecked && ytDlpUpdateChecked) {
       loadDownloads();
       let unlisten: (() => void) | undefined;
       initEventListeners().then((fn) => { unlisten = fn; });
       return () => { unlisten?.(); };
     }
-  }, [dependencyChecked, updateCheckDone]);
+  }, [appUpdateChecked, ytDlpUpdateChecked]);
 
-  // Step 1: Language selection (first launch only)
+  // ── Render: step-by-step gates ────────────────────────────────────────────
+
+  // Step 0: Language selection (first launch only)
   if (!languageSelected) {
     return <LanguageSelect onSelect={() => setLanguageSelected(true)} />;
   }
 
-  // Step 2: Dependency check
-  if (!dependencyChecked) {
-    return <DependencyCheck />;
-  }
-
-  // Step 3: yt-dlp version check / update dialog
-  if (!updateCheckDone) {
-    if (pendingUpdate) {
+  // Step 1a: App update dialog
+  if (!appUpdateChecked) {
+    if (pendingAppUpdate) {
       return (
-        <UpdateDialog
-          updateInfo={pendingUpdate}
-          onDone={() => {
-            setPendingUpdate(null);
-            setUpdateCheckDone(true);
+        <AppUpdateDialog
+          updateInfo={pendingAppUpdate}
+          onSkip={() => {
+            setPendingAppUpdate(null);
+            setAppUpdateChecked(true);
           }}
         />
       );
     }
-    // Still checking — show nothing (instant, runs in background)
+    // Still checking — render nothing (instant network call)
     return null;
   }
 
-  // Step 4: Main app
+  // Step 2a: yt-dlp update dialog
+  if (!ytDlpUpdateChecked) {
+    if (pendingYtDlpUpdate) {
+      return (
+        <UpdateDialog
+          updateInfo={pendingYtDlpUpdate}
+          onDone={() => {
+            setPendingYtDlpUpdate(null);
+            setYtDlpUpdateChecked(true);
+          }}
+        />
+      );
+    }
+    return null;
+  }
+
+  // Step 3: Main app
   return (
     <div className="app-container">
       <TopBar onOpenSettings={() => setSettingsOpen(true)} />

@@ -129,6 +129,11 @@ const en = {
   update_error: "Update failed:",
   update_checking: "Checking for yt-dlp updates...",
   update_upToDate: "yt-dlp is up to date",
+  // App self-update dialog
+  appUpdate_title: "App Update Available",
+  appUpdate_desc: "A new version of YT Downloader is available. Update now to get the latest features and fixes.",
+  appUpdate_installing: "Downloading and installing update...",
+  appUpdate_installAndRestart: "Update & Restart",
 };
 
 const tr: Translations = {
@@ -221,6 +226,11 @@ const tr: Translations = {
   update_error: "Güncelleme başarısız:",
   update_checking: "yt-dlp güncellemesi kontrol ediliyor...",
   update_upToDate: "yt-dlp güncel",
+  // Uygulama güncelleme dialog
+  appUpdate_title: "Uygulama Güncellemesi Mevcut",
+  appUpdate_desc: "YT Downloader'ın yeni bir sürümü mevcut. En son özelliklere ve düzeltmelere sahip olmak için şimdi güncelleyin.",
+  appUpdate_installing: "Güncelleme indiriliyor ve kuruluyor...",
+  appUpdate_installAndRestart: "Güncelle ve Yeniden Başlat",
 };
 
 const es: Translations = {
@@ -304,6 +314,10 @@ const es: Translations = {
   update_error: "Error al actualizar:",
   update_checking: "Buscando actualizaciones de yt-dlp...",
   update_upToDate: "yt-dlp está actualizado",
+  appUpdate_title: "Actualización disponible",
+  appUpdate_desc: "Hay una nueva versión de YT Downloader disponible. Actualiza ahora para obtener las últimas funciones y correcciones.",
+  appUpdate_installing: "Descargando e instalando actualización...",
+  appUpdate_installAndRestart: "Actualizar y reiniciar",
 };
 
 const fr: Translations = {
@@ -387,6 +401,10 @@ const fr: Translations = {
   update_error: "Échec de la mise à jour :",
   update_checking: "Vérification des mises à jour de yt-dlp...",
   update_upToDate: "yt-dlp est à jour",
+  appUpdate_title: "Mise à jour disponible",
+  appUpdate_desc: "Une nouvelle version de YT Downloader est disponible. Mettez à jour maintenant pour profiter des dernières fonctionnalités.",
+  appUpdate_installing: "Téléchargement et installation de la mise à jour...",
+  appUpdate_installAndRestart: "Mettre à jour et redémarrer",
 };
 
 const de: Translations = {
@@ -470,6 +488,10 @@ const de: Translations = {
   update_error: "Update fehlgeschlagen:",
   update_checking: "Prüfe yt-dlp Updates...",
   update_upToDate: "yt-dlp ist aktuell",
+  appUpdate_title: "App-Update verfügbar",
+  appUpdate_desc: "Eine neue Version von YT Downloader ist verfügbar. Jetzt aktualisieren, um die neuesten Funktionen zu erhalten.",
+  appUpdate_installing: "Update wird heruntergeladen und installiert...",
+  appUpdate_installAndRestart: "Aktualisieren & neu starten",
 };
 
 const pt: Translations = {
@@ -553,6 +575,10 @@ const pt: Translations = {
   update_error: "Falha na atualização:",
   update_checking: "Verificando atualizações do yt-dlp...",
   update_upToDate: "yt-dlp está atualizado",
+  appUpdate_title: "Atualização disponível",
+  appUpdate_desc: "Uma nova versão do YT Downloader está disponível. Atualize agora para obter os recursos mais recentes.",
+  appUpdate_installing: "Baixando e instalando atualização...",
+  appUpdate_installAndRestart: "Atualizar e reiniciar",
 };
 
 const ar: Translations = {
@@ -636,6 +662,10 @@ const ar: Translations = {
   update_error: "فشل التحديث:",
   update_checking: "جارٍ التحقق من تحديثات yt-dlp...",
   update_upToDate: "yt-dlp محدّث",
+  appUpdate_title: "تحديث التطبيق متاح",
+  appUpdate_desc: "يتوفر إصدار جديد من YT Downloader. حدّث الآن للحصول على أحدث الميزات والإصلاحات.",
+  appUpdate_installing: "جارٍ تنزيل التحديث وتثبيته...",
+  appUpdate_installAndRestart: "تحديث وإعادة تشغيل",
 };
 
 const ja: Translations = {
@@ -719,6 +749,10 @@ const ja: Translations = {
   update_error: "更新に失敗しました:",
   update_checking: "yt-dlpのアップデートを確認中...",
   update_upToDate: "yt-dlpは最新です",
+  appUpdate_title: "アプリのアップデートあり",
+  appUpdate_desc: "YT Downloaderの新しいバージョンが利用可能です。今すぐ更新して最新の機能を入手してください。",
+  appUpdate_installing: "アップデートをダウンロード・インストール中...",
+  appUpdate_installAndRestart: "更新して再起動",
 };
 
 const ko: Translations = {
@@ -802,6 +836,10 @@ const ko: Translations = {
   update_error: "업데이트 실패:",
   update_checking: "yt-dlp 업데이트 확인 중...",
   update_upToDate: "yt-dlp가 최신입니다",
+  appUpdate_title: "앱 업데이트 가능",
+  appUpdate_desc: "YT Downloader의 새 버전을 사용할 수 있습니다. 지금 업데이트하여 최신 기능을 받으세요.",
+  appUpdate_installing: "업데이트를 다운로드하고 설치하는 중...",
+  appUpdate_installAndRestart: "업데이트 및 재시작",
 };
 
 const zh: Translations = {
@@ -885,6 +923,10 @@ const zh: Translations = {
   update_error: "更新失败：",
   update_checking: "正在检查 yt-dlp 更新...",
   update_upToDate: "yt-dlp 已是最新版本",
+  appUpdate_title: "应用更新可用",
+  appUpdate_desc: "YT Downloader 有新版本可用。立即更新以获取最新功能和修复。",
+  appUpdate_installing: "正在下载并安装更新...",
+  appUpdate_installAndRestart: "更新并重启",
 };
 
 // ─── Translation map ─────────────────────────────────────────────────────────

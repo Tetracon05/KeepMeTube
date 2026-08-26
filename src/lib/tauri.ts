@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   AnalysisResult,
+  AppUpdateInfo,
   DependencyStatus,
   DownloadEntry,
   UpdateCheckResult,
@@ -12,20 +13,22 @@ export async function checkDependencies(): Promise<DependencyStatus> {
   return invoke("check_dependencies");
 }
 
-export async function installYtDlp(): Promise<string> {
-  return invoke("install_yt_dlp");
-}
-
-export async function installFfmpeg(): Promise<string> {
-  return invoke("install_ffmpeg");
-}
-
 export async function checkYtDlpUpdate(): Promise<UpdateCheckResult> {
   return invoke("check_yt_dlp_update");
 }
 
 export async function updateYtDlp(): Promise<string> {
   return invoke("update_yt_dlp");
+}
+
+// ===== App Update Commands =====
+
+export async function checkAppUpdate(): Promise<AppUpdateInfo | null> {
+  return invoke("check_app_update");
+}
+
+export async function installAppUpdate(): Promise<void> {
+  return invoke("install_app_update");
 }
 
 // ===== Analysis Commands =====

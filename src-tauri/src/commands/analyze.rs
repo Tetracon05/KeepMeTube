@@ -34,7 +34,7 @@ pub async fn analyze_url(
 
     args.push(url.clone());
 
-    let mut cmd = Command::new("yt-dlp");
+    let mut cmd = Command::new(&state.yt_dlp_path);
     cmd.args(&args)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());

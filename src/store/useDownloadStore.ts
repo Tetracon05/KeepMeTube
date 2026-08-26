@@ -3,7 +3,6 @@ import { listen } from "@tauri-apps/api/event";
 import type {
   DownloadEntry,
   ProgressEvent,
-  DependencyStatus,
   ContextMenuPosition,
 } from "../types";
 import * as api from "../lib/tauri";
@@ -14,8 +13,6 @@ interface DownloadStore {
   selectedIds: Set<string>;
   isMultiSelectMode: boolean;
   isAddPanelOpen: boolean;
-  dependencyStatus: DependencyStatus | null;
-  dependencyChecked: boolean;
   contextMenu: { position: ContextMenuPosition; downloadId: string } | null;
   renameDialogId: string | null;
   confirmDeleteIds: string[] | null;
@@ -27,8 +24,6 @@ interface DownloadStore {
   setMultiSelectMode: (on: boolean) => void;
   toggleMultiSelectMode: () => void;
   setAddPanelOpen: (open: boolean) => void;
-  setDependencyStatus: (status: DependencyStatus) => void;
-  setDependencyChecked: (checked: boolean) => void;
   setContextMenu: (
     ctx: { position: ContextMenuPosition; downloadId: string } | null
   ) => void;
@@ -47,8 +42,6 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
   selectedIds: new Set(),
   isMultiSelectMode: false,
   isAddPanelOpen: false,
-  dependencyStatus: null,
-  dependencyChecked: false,
   contextMenu: null,
   renameDialogId: null,
   confirmDeleteIds: null,
@@ -83,8 +76,6 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
     })),
 
   setAddPanelOpen: (open) => set({ isAddPanelOpen: open }),
-  setDependencyStatus: (status) => set({ dependencyStatus: status }),
-  setDependencyChecked: (checked) => set({ dependencyChecked: checked }),
   setContextMenu: (ctx) => set({ contextMenu: ctx }),
   setRenameDialogId: (id) => set({ renameDialogId: id }),
   setConfirmDeleteIds: (ids) => set({ confirmDeleteIds: ids }),

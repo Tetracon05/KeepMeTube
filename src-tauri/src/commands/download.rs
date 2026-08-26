@@ -105,7 +105,8 @@ async fn spawn_download(
     cmd_args.extend(format_args);
     cmd_args.push(url);
 
-    let mut cmd = Command::new("yt-dlp");
+    // Use the bundled yt-dlp binary path stored in AppState (no PATH dependency)
+    let mut cmd = Command::new(&state.yt_dlp_path);
     cmd.args(&cmd_args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

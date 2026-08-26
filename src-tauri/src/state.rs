@@ -103,6 +103,14 @@ pub struct UpdateCheckResult {
     pub update_available: bool,
 }
 
+/// Information about an available application self-update
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppUpdateInfo {
+    pub version: String,
+    pub notes: Option<String>,
+    pub pub_date: Option<String>,
+}
+
 /// Shared application state managed by Tauri
 pub struct AppState {
     pub downloads: Arc<Mutex<Vec<DownloadEntry>>>,
@@ -110,16 +118,27 @@ pub struct AppState {
     pub analyze_process: Arc<Mutex<Option<u32>>>,
     pub data_dir: Arc<Mutex<String>>,
     pub max_concurrent: usize,
+    /// Absolute path to the bundled yt-dlp binary (resolved at startup).
+    pub yt_dlp_path: String,
+    /// Absolute path to the bundled ffmpeg binary (resolved at startup).
+    pub ffmpeg_path: String,
 }
 
 impl AppState {
-    pub fn new(data_dir: String, initial_downloads: Vec<DownloadEntry>) -> Self {
+    pub fn new(
+        data_dir: String,
+        initial_downloads: Vec<DownloadEntry>,
+        yt_dlp_path: String,
+        ffmpeg_path: String,
+    ) -> Self {
         Self {
             downloads: Arc::new(Mutex::new(initial_downloads)),
             active_processes: Arc::new(Mutex::new(HashMap::new())),
             analyze_process: Arc::new(Mutex::new(None)),
             data_dir: Arc::new(Mutex::new(data_dir)),
             max_concurrent: 3,
+            yt_dlp_path,
+            ffmpeg_path,
         }
     }
 }

@@ -78,6 +78,12 @@ export interface UpdateCheckResult {
   update_available: boolean;
 }
 
+export interface AppUpdateInfo {
+  version: string;
+  notes: string | null;
+  pub_date: string | null;
+}
+
 // ===== UI State Types =====
 
 export interface ContextMenuPosition {

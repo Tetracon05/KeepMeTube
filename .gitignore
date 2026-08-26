@@ -21,6 +21,10 @@ src-tauri/target/
 src-tauri/gen/
 **/*.rs.bk
 
+# Bundled binaries (downloaded at build time, not committed to repo)
+src-tauri/binaries/yt-dlp*
+src-tauri/binaries/ffmpeg*
+
 # Sensitive / Authentication / Environment
 .env
 .env.*
