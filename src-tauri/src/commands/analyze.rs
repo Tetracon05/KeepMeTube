@@ -3,9 +3,14 @@ use tokio::process::Command;
 use tauri::State;
 
 /// Analyze a URL by running yt-dlp --dump-json and parsing the output.
-/// yt-dlp's default client selection (android_vr) is used without cookies —
-/// this gives only up to 360p. With a cookies.txt file from a signed-in browser,
-/// yt-dlp can access high-quality formats (1080p+).
+///
+/// # Performance notes
+/// - `--extractor-args youtube:player_client=android` skips the JS evaluation
+///   fallback sequence that normally adds 10-20 s of serial round-trips.
+///   The android client returns a complete format manifest in a single API call.
+/// - `--no-check-formats` disables the per-format HEAD request verification
+///   pass that yt-dlp runs by default, saving another 2-5 s on videos with
+///   many available formats.
 #[tauri::command]
 pub async fn analyze_url(
     url: String,
@@ -15,21 +20,31 @@ pub async fn analyze_url(
     // Kill any existing analysis process
     abort_analysis_inner(&state).await;
 
-    // Build yt-dlp args — let yt-dlp choose the best client automatically.
-    // Do NOT hardcode player_client: YouTube rotates restrictions frequently
-    // and yt-dlp's default is always the most up-to-date choice.
     let mut args: Vec<String> = vec![
         "--dump-json".into(),
         "--no-playlist".into(),
+        // Skip per-format HEAD verification — speeds up analysis by 2-5 s on
+        // videos with many formats (yt-dlp checks each URL by default).
+        "--no-check-formats".into(),
     ];
+
+    let has_cookies = cookies_file.as_deref().map(|p| !p.is_empty()).unwrap_or(false);
+
+    if !has_cookies {
+        // No cookies: use the android client for a fast single-round-trip
+        // manifest fetch with no JS runtime required.
+        // IMPORTANT: android is capped at ~360p. When cookies are present we
+        // deliberately skip this override so yt-dlp can use its authenticated
+        // web client, which returns the full quality ladder (1080p / 4K).
+        args.push("--extractor-args".into());
+        args.push("youtube:player_client=android".into());
+    }
 
     // Provide cookies.txt if the user has set one — this is the only reliable
     // way to unlock high-resolution formats on YouTube in 2025+.
-    if let Some(ref path) = cookies_file {
-        if !path.is_empty() {
-            args.push("--cookies".into());
-            args.push(path.clone());
-        }
+    if has_cookies {
+        args.push("--cookies".into());
+        args.push(cookies_file.unwrap());
     }
 
     args.push(url.clone());
@@ -41,7 +56,10 @@ pub async fn analyze_url(
 
     #[cfg(target_os = "windows")]
     {
-        cmd.creation_flags(0x08000000);
+        use std::os::windows::process::CommandExt;
+        cmd.env("PYTHONIOENCODING", "utf-8")
+           .env("PYTHONUTF8", "1")
+           .creation_flags(0x08000000);
     }
 
     let child = cmd

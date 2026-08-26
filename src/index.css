@@ -1722,3 +1722,176 @@ body {
   border: 1px solid rgba(99, 102, 241, 0.2);
   color: var(--text-secondary);
 }
+
+/* ===== Update Banner ===== */
+@keyframes banner-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.update-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: banner-slide-up 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  pointer-events: none; /* children re-enable */
+}
+
+.update-banner__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px var(--space-md);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: all;
+}
+
+.update-banner__item--app {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.update-banner__item--ytdlp {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.dark .update-banner__item--app {
+  background: rgba(99, 102, 241, 0.22);
+}
+
+.dark .update-banner__item--ytdlp {
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.update-banner__icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.update-banner__text {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.update-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.update-banner__dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  line-height: 1;
+}
+
+.update-banner__dismiss:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.update-banner__error {
+  color: var(--color-error);
+  font-size: 0.9rem;
+  cursor: help;
+}
+
+.update-banner__done {
+  font-size: 0.8rem;
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+/* ===== "Connecting…" progress state ===== */
+@keyframes connecting-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.progress-connecting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-bar-fill.connecting {
+  background: linear-gradient(
+    90deg,
+    var(--color-info) 0%,
+    #60a5fa 40%,
+    var(--color-info) 80%
+  );
+  background-size: 200% 100%;
+  animation:
+    progress-indeterminate 1.4s ease-in-out infinite,
+    connecting-shimmer 1.8s linear infinite;
+}
+
+.connecting-label {
+  color: var(--color-info) !important;
+  font-style: italic;
+}
+
+/* ===== Settings: Updates Section ===== */
+.settings-updates-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.settings-update-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.settings-update-item--idle {
+  background: transparent;
+  border-color: transparent;
+  padding: 4px 0;
+}
+
+.settings-update-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.settings-update-badge__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 6px var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.settings-update-uptodate {
+  font-size: 0.8rem;
+  color: var(--color-success);
+  font-weight: 500;
+}

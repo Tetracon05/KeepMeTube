@@ -89,19 +89,30 @@ async fn spawn_download(
         "--newline".to_string(),
         "--no-playlist".to_string(),
         "--force-overwrites".to_string(),
-        // Let yt-dlp pick the best client automatically — do NOT hardcode
-        // player_client as YouTube frequently rotates client restrictions.
-        // Cookies (--cookies path/to/cookies.txt) are passed via format_args
-        // from the frontend if the user has configured a cookies file.
-        //
         // --windows-filenames: sanitise output filename for Windows
         // (prevents [Errno 22] Invalid argument on paths with special chars)
         "--windows-filenames".to_string(),
+        // Skip per-format HEAD verification — avoids extra round-trips before
+        // the actual download stream begins.
+        "--no-check-formats".to_string(),
         "--progress-template".to_string(),
         "download:%(progress._percent_str)s|||%(progress._speed_str)s|||%(progress._eta_str)s".to_string(),
         "-o".to_string(),
         output_path.clone(),
     ];
+
+    // Cookies are injected by the frontend as ["--cookies", "<path>", ...] at
+    // the start of format_args. When a cookies file is present we skip the
+    // android client override so yt-dlp uses its authenticated web client,
+    // which returns the full quality ladder (1080p / 4K).
+    // Without cookies we use android for a fast single-round-trip manifest
+    // fetch with no JS runtime required.
+    let has_cookies = format_args.iter().any(|a| a == "--cookies");
+    if !has_cookies {
+        cmd_args.push("--extractor-args".to_string());
+        cmd_args.push("youtube:player_client=android".to_string());
+    }
+
     cmd_args.extend(format_args);
     cmd_args.push(url);
 
@@ -113,7 +124,13 @@ async fn spawn_download(
 
     #[cfg(target_os = "windows")]
     {
-        cmd.creation_flags(0x08000000);
+        use std::os::windows::process::CommandExt;
+        // PYTHONUTF8=1 / PYTHONIOENCODING=utf-8: force UTF-8 on stdout/stderr
+        // so yt-dlp doesn't crash with [Errno 22] Invalid argument when the
+        // Windows console codepage (cp1252) can't represent certain characters.
+        cmd.env("PYTHONIOENCODING", "utf-8")
+           .env("PYTHONUTF8", "1")
+           .creation_flags(0x08000000); // CREATE_NO_WINDOW
     }
 
     let mut child = cmd

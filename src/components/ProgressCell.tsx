@@ -9,21 +9,33 @@ interface ProgressCellProps {
 export const ProgressCell: React.FC<ProgressCellProps> = ({ download }) => {
   const { status, progress, speed, error } = download;
 
+  // "Connecting" phase: download has started but no bytes received yet
+  const isConnecting = status === "downloading" && progress === 0 && !speed;
+
   return (
     <div className="progress-cell">
       {status === "downloading" && (
-        <div className="progress-downloading">
-          <div className="progress-bar-track">
-            <div
-              className="progress-bar-fill downloading"
-              style={{ width: `${Math.min(progress, 100)}%` }}
-            />
+        isConnecting ? (
+          <div className="progress-connecting">
+            <div className="progress-bar-track">
+              <div className="progress-bar-fill progress-bar-indeterminate connecting" />
+            </div>
+            <span className="progress-label connecting-label">Connecting…</span>
           </div>
-          <div className="progress-info">
-            <span className="progress-percent">{progress.toFixed(1)}%</span>
-            {speed && <span className="progress-speed">{speed}</span>}
+        ) : (
+          <div className="progress-downloading">
+            <div className="progress-bar-track">
+              <div
+                className="progress-bar-fill downloading"
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              />
+            </div>
+            <div className="progress-info">
+              <span className="progress-percent">{progress.toFixed(1)}%</span>
+              {speed && <span className="progress-speed">{speed}</span>}
+            </div>
           </div>
-        </div>
+        )
       )}
 
       {status === "processing" && (

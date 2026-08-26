@@ -10,6 +10,7 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { AppUpdateDialog } from "./components/AppUpdateDialog";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { getSavedLanguage, initLanguage } from "./lib/i18n";
 import * as api from "./lib/tauri";
 import type { UpdateCheckResult, AppUpdateInfo } from "./types";
@@ -27,98 +28,63 @@ function App() {
     return getSavedLanguage() !== null;
   });
 
-  // ── Step 1: App self-update check ─────────────────────────────────────────
-  const [appUpdateChecked, setAppUpdateChecked] = useState(false);
+  // ── Update state (populated asynchronously, never blocks UI) ──────────────
   const [pendingAppUpdate, setPendingAppUpdate] = useState<AppUpdateInfo | null>(null);
-
-  useEffect(() => {
-    if (!languageSelected || appUpdateChecked) return;
-
-    api.checkAppUpdate()
-      .then((info) => {
-        if (info) {
-          setPendingAppUpdate(info);
-        } else {
-          setAppUpdateChecked(true);
-        }
-      })
-      .catch(() => {
-        // Network error or updater not configured — skip silently
-        setAppUpdateChecked(true);
-      });
-  }, [languageSelected]);
-
-  // ── Step 2: yt-dlp update check ───────────────────────────────────────────
-  const [ytDlpUpdateChecked, setYtDlpUpdateChecked] = useState(false);
   const [pendingYtDlpUpdate, setPendingYtDlpUpdate] = useState<UpdateCheckResult | null>(null);
 
+  // Modals for update flows (opened from banner / settings button)
+  const [appUpdateModalOpen, setAppUpdateModalOpen] = useState(false);
+  const [ytDlpUpdateModalOpen, setYtDlpUpdateModalOpen] = useState(false);
+
+  // ── Load downloads immediately once language is confirmed ─────────────────
   useEffect(() => {
-    if (!appUpdateChecked || ytDlpUpdateChecked) return;
+    if (!languageSelected) return;
+    loadDownloads();
+    let unlisten: (() => void) | undefined;
+    initEventListeners().then((fn) => { unlisten = fn; });
+    return () => { unlisten?.(); };
+  }, [languageSelected]);
 
-    api.checkYtDlpUpdate()
-      .then((result) => {
-        if (result.update_available) {
-          setPendingYtDlpUpdate(result);
-        } else {
-          setYtDlpUpdateChecked(true);
-        }
-      })
-      .catch(() => {
-        setYtDlpUpdateChecked(true);
-      });
-  }, [appUpdateChecked]);
-
-  // ── Step 3: Load downloads once both checks are done ──────────────────────
+  // ── Fire both update checks concurrently in the background ───────────────
   useEffect(() => {
-    if (appUpdateChecked && ytDlpUpdateChecked) {
-      loadDownloads();
-      let unlisten: (() => void) | undefined;
-      initEventListeners().then((fn) => { unlisten = fn; });
-      return () => { unlisten?.(); };
-    }
-  }, [appUpdateChecked, ytDlpUpdateChecked]);
+    if (!languageSelected) return;
 
-  // ── Render: step-by-step gates ────────────────────────────────────────────
+    Promise.allSettled([
+      api.checkAppUpdate(),
+      api.checkYtDlpUpdate(),
+    ]).then(([appResult, ytResult]) => {
+      if (appResult.status === "fulfilled" && appResult.value) {
+        setPendingAppUpdate(appResult.value);
+      }
+      if (ytResult.status === "fulfilled" && ytResult.value?.update_available) {
+        setPendingYtDlpUpdate(ytResult.value);
+      }
+    });
+  }, [languageSelected]);
 
-  // Step 0: Language selection (first launch only)
+  // Helper to re-run update checks on demand (used by SettingsPanel)
+  const runUpdateChecks = () => {
+    Promise.allSettled([
+      api.checkAppUpdate(),
+      api.checkYtDlpUpdate(),
+    ]).then(([appResult, ytResult]) => {
+      if (appResult.status === "fulfilled" && appResult.value) {
+        setPendingAppUpdate(appResult.value);
+      }
+      if (ytResult.status === "fulfilled" && ytResult.value?.update_available) {
+        setPendingYtDlpUpdate(ytResult.value);
+      }
+    });
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  // Language selection (first launch only) — only gate in the entire app
   if (!languageSelected) {
     return <LanguageSelect onSelect={() => setLanguageSelected(true)} />;
   }
 
-  // Step 1a: App update dialog
-  if (!appUpdateChecked) {
-    if (pendingAppUpdate) {
-      return (
-        <AppUpdateDialog
-          updateInfo={pendingAppUpdate}
-          onSkip={() => {
-            setPendingAppUpdate(null);
-            setAppUpdateChecked(true);
-          }}
-        />
-      );
-    }
-    // Still checking — render nothing (instant network call)
-    return null;
-  }
-
-  // Step 2a: yt-dlp update dialog
-  if (!ytDlpUpdateChecked) {
-    if (pendingYtDlpUpdate) {
-      return (
-        <UpdateDialog
-          updateInfo={pendingYtDlpUpdate}
-          onDone={() => {
-            setPendingYtDlpUpdate(null);
-            setYtDlpUpdateChecked(true);
-          }}
-        />
-      );
-    }
-    return null;
-  }
-
-  // Step 3: Main app
+  // Main UI renders immediately; update dialogs/banner are overlays
   return (
     <div className="app-container">
       <TopBar onOpenSettings={() => setSettingsOpen(true)} />
@@ -131,7 +97,52 @@ function App() {
         onClose={() => setSettingsOpen(false)}
         themeMode={mode}
         onSetTheme={setMode}
+        pendingAppUpdate={pendingAppUpdate}
+        pendingYtDlpUpdate={pendingYtDlpUpdate}
+        onTriggerAppUpdate={() => {
+          setSettingsOpen(false);
+          setAppUpdateModalOpen(true);
+        }}
+        onTriggerYtDlpUpdate={() => {
+          setSettingsOpen(false);
+          setYtDlpUpdateModalOpen(true);
+        }}
+        onCheckUpdates={runUpdateChecks}
       />
+
+      {/* App self-update modal */}
+      {appUpdateModalOpen && pendingAppUpdate && (
+        <AppUpdateDialog
+          updateInfo={pendingAppUpdate}
+          onSkip={() => {
+            setPendingAppUpdate(null);
+            setAppUpdateModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* yt-dlp update modal */}
+      {ytDlpUpdateModalOpen && pendingYtDlpUpdate && (
+        <UpdateDialog
+          updateInfo={pendingYtDlpUpdate}
+          onDone={() => {
+            setPendingYtDlpUpdate(null);
+            setYtDlpUpdateModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* Non-intrusive bottom banner — hidden while a modal is open */}
+      {(pendingAppUpdate || pendingYtDlpUpdate) &&
+        !appUpdateModalOpen &&
+        !ytDlpUpdateModalOpen && (
+          <UpdateBanner
+            pendingAppUpdate={pendingAppUpdate}
+            pendingYtDlpUpdate={pendingYtDlpUpdate}
+            onDismissAppUpdate={() => setPendingAppUpdate(null)}
+            onDismissYtDlpUpdate={() => setPendingYtDlpUpdate(null)}
+          />
+        )}
     </div>
   );
 }
