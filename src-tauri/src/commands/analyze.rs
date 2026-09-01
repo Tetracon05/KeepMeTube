@@ -26,6 +26,11 @@ pub async fn analyze_url(
         // Skip per-format HEAD verification — speeds up analysis by 2-5 s on
         // videos with many formats (yt-dlp checks each URL by default).
         "--no-check-formats".into(),
+        // Force UTF-8 — yt-dlp's own encoding detection ignores PYTHONIOENCODING/
+        // PYTHONUTF8 and can crash with OSError: [Errno 22] on Windows codepages
+        // that can't represent certain title/output characters.
+        "--encoding".into(),
+        "utf-8".into(),
     ];
 
     let has_cookies = cookies_file.as_deref().map(|p| !p.is_empty()).unwrap_or(false);

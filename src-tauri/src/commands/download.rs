@@ -95,6 +95,13 @@ async fn spawn_download(
         // Skip per-format HEAD verification — avoids extra round-trips before
         // the actual download stream begins.
         "--no-check-formats".to_string(),
+        // yt-dlp's own preferredencoding() detection ignores PYTHONIOENCODING/
+        // PYTHONUTF8 and falls back to the Windows system codepage (e.g.
+        // cp1252), which can't encode some characters in progress/postprocessor
+        // output and crashes with OSError: [Errno 22] Invalid argument on flush.
+        // Force UTF-8 explicitly to bypass that detection.
+        "--encoding".to_string(),
+        "utf-8".to_string(),
         "--progress-template".to_string(),
         "download:%(progress._percent_str)s|||%(progress._speed_str)s|||%(progress._eta_str)s".to_string(),
         "-o".to_string(),
