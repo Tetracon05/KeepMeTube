@@ -67,6 +67,7 @@ pub async fn start_download(
             progress: 0.0,
             speed: String::new(),
             error: None,
+            file_size: None,
         }).ok();
 
         return Ok(());
@@ -200,6 +201,7 @@ async fn spawn_download(
                     progress: 100.0,
                     speed: String::new(),
                     error: None,
+                    file_size: None,
                 }).ok();
 
                 let mut dls = downloads_for_progress.lock().await;
@@ -226,6 +228,7 @@ async fn spawn_download(
                                 progress: pct,
                                 speed: speed_str.clone(),
                                 error: None,
+                                file_size: None,
                             }).ok();
 
                             let mut dls = downloads_for_progress.lock().await;
@@ -286,6 +289,7 @@ async fn spawn_download(
         };
 
         // Update stored entry
+        let mut computed_file_size: Option<u64> = None;
         {
             let mut downloads = state_downloads.lock().await;
             if let Some(dl) = downloads.iter_mut().find(|d| d.id == id_clone) {
@@ -299,6 +303,7 @@ async fn spawn_download(
                         dl.file_size = Some(meta.len());
                     }
                 }
+                computed_file_size = dl.file_size;
             }
             let data_dir = state_data_dir.lock().await;
             store::save_downloads(&data_dir, &downloads);
@@ -310,6 +315,7 @@ async fn spawn_download(
             progress: if success { 100.0 } else { 0.0 },
             speed: String::new(),
             error: error_msg,
+            file_size: computed_file_size,
         }).ok();
     });
 
@@ -349,6 +355,7 @@ pub async fn cancel_download(
         progress: 0.0,  // Reset to 0 on cancel (intentional)
         speed: String::new(),
         error: None,
+        file_size: None,
     }).ok();
 
     Ok(())

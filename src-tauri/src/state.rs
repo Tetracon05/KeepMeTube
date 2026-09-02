@@ -53,6 +53,8 @@ pub struct ProgressEvent {
     pub progress: f64,
     pub speed: String,
     pub error: Option<String>,
+    /// Populated once the file size is known (on completion); `None` otherwise.
+    pub file_size: Option<u64>,
 }
 
 /// Result of analyzing a URL with yt-dlp
