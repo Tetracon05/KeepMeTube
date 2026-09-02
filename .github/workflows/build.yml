@@ -12,6 +12,13 @@ jobs:
   build:
     strategy:
       fail-fast: false
+      # tauri-action reads the release's existing latest.json, merges in this
+      # platform's signature, and re-uploads it. Running the matrix in
+      # parallel means every job races to read-modify-write that same file on
+      # the same release, and the loser's upload can vanish or get clobbered
+      # — which is why past releases shipped installers but no latest.json.
+      # Serializing the jobs makes each merge step safe.
+      max-parallel: 1
       matrix:
         include:
           - platform: macos-latest
