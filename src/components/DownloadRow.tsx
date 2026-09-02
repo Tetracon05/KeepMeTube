@@ -4,6 +4,7 @@ import { ProgressCell } from "./ProgressCell";
 import { IconVideo, IconMusic, IconMonitor, IconCheckSquare, IconSquare } from "./Icons";
 import { formatBytes, formatDate } from "../lib/utils";
 import * as api from "../lib/tauri";
+import { useLanguage } from "../hooks/useLanguage";
 
 interface DownloadRowProps {
   download: DownloadEntry;
@@ -39,6 +40,7 @@ export const DownloadRow: React.FC<DownloadRowProps> = ({
   onSelect,
   onContextMenu,
 }) => {
+  const { lang } = useLanguage();
   const isDraggable = download.status === "completed" && !!download.file_path;
   const [isDragging, setIsDragging] = useState(false);
   // Track whether a drag was initiated so we can suppress the click on mouseup
@@ -125,6 +127,7 @@ export const DownloadRow: React.FC<DownloadRowProps> = ({
       <td className="cell-kind" title={kindLabels[download.kind] || download.kind}>
         <span className="kind-badge">
           <KindIcon kind={download.kind} />
+          <span className="kind-label">{kindLabels[download.kind] || download.kind}</span>
         </span>
       </td>
       <td className="cell-size">
@@ -134,7 +137,7 @@ export const DownloadRow: React.FC<DownloadRowProps> = ({
       </td>
       <td className="cell-date">
         <span className="date-text">
-          {formatDate(download.created_at)}
+          {formatDate(download.created_at, lang)}
         </span>
       </td>
       <td className="cell-progress">

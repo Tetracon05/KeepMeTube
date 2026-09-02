@@ -168,6 +168,11 @@ body {
 
 /* ===== Buttons ===== */
 .btn {
+  /* Strip native OS control chrome (WKWebView renders real AppKit button
+     theming — a wide rounded capsule — on <button> unless this is reset,
+     which is most visible on disabled buttons like the update-check spinner). */
+  appearance: none;
+  -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
@@ -310,13 +315,39 @@ body {
 }
 
 .th-name {
-  width: 45%;
+  width: 55%;
 }
 .th-kind {
-  width: 20%;
+  width: 10%;
 }
 .th-progress {
   width: 35%;
+}
+
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.th-sortable:hover {
+  color: var(--text-secondary);
+}
+
+.th-sortable-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.th-sort-icon {
+  display: inline-flex;
+  align-items: center;
+  width: 12px;
+  height: 12px;
+}
+
+.th-sorted {
+  color: var(--text-secondary);
 }
 
 .download-row {
@@ -366,6 +397,10 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-secondary);
+}
+
+.kind-label {
+  white-space: nowrap;
 }
 
 .kind-icon {
@@ -605,6 +640,57 @@ body {
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border-light);
+}
+
+/* ===== Confirm Dialog — shares modal-header/body/footer with Add Download modal ===== */
+.confirm-dialog {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 420px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp var(--transition-slow) ease-out;
+  border: 1px solid var(--border-color);
+}
+
+.confirm-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--space-md);
+  border-radius: 50%;
+  background: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.confirm-message {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.confirm-message strong {
+  color: var(--text-primary);
+}
+
+.btn-destructive {
+  background: var(--color-error);
+  color: white;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+}
+
+.btn-destructive:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-destructive:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 /* ===== Forms ===== */
@@ -1242,22 +1328,6 @@ body {
 }
 
 
-/* ===== KIND column — icon only (narrower) ===== */
-.cell-kind {
-  width: 40px !important;
-  text-align: center;
-}
-
-.kind-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: var(--bg-hover);
-}
-
 /* ===== DATE column — wider for date+time ===== */
 .cell-date {
   width: 160px;
@@ -1353,11 +1423,19 @@ body {
 }
 
 .settings-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 6px;
   letter-spacing: 0.01em;
+}
+
+.settings-section__title svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
 }
 
 .settings-section__desc {
@@ -1403,8 +1481,9 @@ body {
 }
 
 .settings-cookies-icon {
+  display: flex;
+  align-items: center;
   color: var(--color-success);
-  font-size: 13px;
   flex-shrink: 0;
 }
 
@@ -1476,8 +1555,14 @@ body {
   background: rgba(99, 102, 241, 0.08);
 }
 
-.theme-option__icon { font-size: 20px; line-height: 1; }
+.theme-option__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
 .theme-option__label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
+.theme-option--active .theme-option__icon,
 .theme-option--active .theme-option__label { color: var(--accent-primary); }
 
 /* Language selector grid in settings */
@@ -1873,6 +1958,14 @@ body {
   padding: 4px 0;
 }
 
+/* Always pin the trigger button to the right edge, whether or not a status
+   badge is present before it — avoids relying on space-between's
+   distribution across a child count that varies (0 or 1 leading siblings). */
+.settings-update-check-btn {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .settings-update-badge {
   display: flex;
   align-items: center;
@@ -1893,5 +1986,11 @@ body {
 .settings-update-uptodate {
   font-size: 0.8rem;
   color: var(--color-success);
+  font-weight: 500;
+}
+
+.settings-update-error {
+  font-size: 0.8rem;
+  color: var(--color-error);
   font-weight: 500;
 }

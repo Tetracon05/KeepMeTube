@@ -125,3 +125,27 @@ export const IconCalendar: React.FC<IconProps> = (p) => (
 export const IconHardDrive: React.FC<IconProps> = (p) => (
   <Icon {...p}><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></Icon>
 );
+
+export const IconChevronUp: React.FC<IconProps> = (p) => (
+  <Icon {...p}><polyline points="18 15 12 9 6 15"/></Icon>
+);
+
+export const IconChevronDown: React.FC<IconProps> = (p) => (
+  <Icon {...p}><polyline points="6 9 12 15 18 9"/></Icon>
+);
+
+export const IconShield: React.FC<IconProps> = (p) => (
+  <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Icon>
+);
+
+export const IconPalette: React.FC<IconProps> = (p) => (
+  <Icon {...p}><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3a2 2 0 0 1 2-2h2a3 3 0 0 0 3-3 10 10 0 0 0-8-10z"/><circle cx="7" cy="10" r="1"/><circle cx="10.5" cy="6.5" r="1"/><circle cx="14.5" cy="6.5" r="1"/><circle cx="17.5" cy="10" r="1"/></Icon>
+);
+
+export const IconGlobe: React.FC<IconProps> = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Icon>
+);
+
+export const IconRefreshCw: React.FC<IconProps> = (p) => (
+  <Icon {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></Icon>
+);

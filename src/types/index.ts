@@ -32,6 +32,7 @@ export interface ProgressEvent {
   progress: number;
   speed: string;
   error: string | null;
+  file_size: number | null;
 }
 
 // ===== Analysis Types =====
@@ -92,3 +93,6 @@ export interface ContextMenuPosition {
 }
 
 export type TabType = "video" | "audio";
+
+export type SortKey = "name" | "kind" | "size" | "date" | "progress";
+export type SortDirection = "asc" | "desc";

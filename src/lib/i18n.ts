@@ -134,6 +134,26 @@ const en = {
   appUpdate_desc: "A new version of YT Downloader is available. Update now to get the latest features and fixes.",
   appUpdate_installing: "Downloading and installing update...",
   appUpdate_installAndRestart: "Update & Restart",
+
+  // Settings — updates section
+  settings_updates: "Updates",
+  settings_appUpdateAvailable: "App update available",
+  settings_updateAppBtn: "Update App",
+  settings_ytdlpUpdateAvailable: "yt-dlp update available",
+  settings_updateYtdlpBtn: "Update yt-dlp",
+  settings_upToDate: "✓ Everything is up to date",
+  settings_checkForUpdates: "Check for Updates",
+  settings_checking: "Checking…",
+  settings_checkFailed: "Couldn't check for updates",
+
+  // Progress column statuses
+  progress_connecting: "Connecting…",
+  progress_processing: "Processing",
+  progress_completed: "Completed",
+  progress_failed: "Failed",
+  progress_unknownError: "Unknown error",
+  progress_queued: "Queued",
+  progress_cancelled: "Cancelled",
 };
 
 const tr: Translations = {
@@ -231,6 +251,24 @@ const tr: Translations = {
   appUpdate_desc: "YT Downloader'ın yeni bir sürümü mevcut. En son özelliklere ve düzeltmelere sahip olmak için şimdi güncelleyin.",
   appUpdate_installing: "Güncelleme indiriliyor ve kuruluyor...",
   appUpdate_installAndRestart: "Güncelle ve Yeniden Başlat",
+
+  settings_updates: "Güncellemeler",
+  settings_appUpdateAvailable: "Uygulama güncellemesi mevcut",
+  settings_updateAppBtn: "Uygulamayı Güncelle",
+  settings_ytdlpUpdateAvailable: "yt-dlp güncellemesi mevcut",
+  settings_updateYtdlpBtn: "yt-dlp'yi Güncelle",
+  settings_upToDate: "✓ Her şey güncel",
+  settings_checkForUpdates: "Güncellemeleri Kontrol Et",
+  settings_checking: "Kontrol ediliyor…",
+  settings_checkFailed: "Güncellemeler kontrol edilemedi",
+
+  progress_connecting: "Bağlanıyor…",
+  progress_processing: "İşleniyor",
+  progress_completed: "Tamamlandı",
+  progress_failed: "Başarısız",
+  progress_unknownError: "Bilinmeyen hata",
+  progress_queued: "Sırada",
+  progress_cancelled: "İptal edildi",
 };
 
 const es: Translations = {
@@ -318,6 +356,24 @@ const es: Translations = {
   appUpdate_desc: "Hay una nueva versión de YT Downloader disponible. Actualiza ahora para obtener las últimas funciones y correcciones.",
   appUpdate_installing: "Descargando e instalando actualización...",
   appUpdate_installAndRestart: "Actualizar y reiniciar",
+
+  settings_updates: "Actualizaciones",
+  settings_appUpdateAvailable: "Actualización de la app disponible",
+  settings_updateAppBtn: "Actualizar app",
+  settings_ytdlpUpdateAvailable: "Actualización de yt-dlp disponible",
+  settings_updateYtdlpBtn: "Actualizar yt-dlp",
+  settings_upToDate: "✓ Todo está actualizado",
+  settings_checkForUpdates: "Buscar actualizaciones",
+  settings_checking: "Comprobando…",
+  settings_checkFailed: "No se pudieron buscar actualizaciones",
+
+  progress_connecting: "Conectando…",
+  progress_processing: "Procesando",
+  progress_completed: "Completado",
+  progress_failed: "Fallido",
+  progress_unknownError: "Error desconocido",
+  progress_queued: "En cola",
+  progress_cancelled: "Cancelado",
 };
 
 const fr: Translations = {
@@ -405,6 +461,24 @@ const fr: Translations = {
   appUpdate_desc: "Une nouvelle version de YT Downloader est disponible. Mettez à jour maintenant pour profiter des dernières fonctionnalités.",
   appUpdate_installing: "Téléchargement et installation de la mise à jour...",
   appUpdate_installAndRestart: "Mettre à jour et redémarrer",
+
+  settings_updates: "Mises à jour",
+  settings_appUpdateAvailable: "Mise à jour de l'application disponible",
+  settings_updateAppBtn: "Mettre à jour l'appli",
+  settings_ytdlpUpdateAvailable: "Mise à jour yt-dlp disponible",
+  settings_updateYtdlpBtn: "Mettre à jour yt-dlp",
+  settings_upToDate: "✓ Tout est à jour",
+  settings_checkForUpdates: "Vérifier les mises à jour",
+  settings_checking: "Vérification…",
+  settings_checkFailed: "Impossible de vérifier les mises à jour",
+
+  progress_connecting: "Connexion…",
+  progress_processing: "Traitement",
+  progress_completed: "Terminé",
+  progress_failed: "Échoué",
+  progress_unknownError: "Erreur inconnue",
+  progress_queued: "En attente",
+  progress_cancelled: "Annulé",
 };
 
 const de: Translations = {
@@ -492,6 +566,24 @@ const de: Translations = {
   appUpdate_desc: "Eine neue Version von YT Downloader ist verfügbar. Jetzt aktualisieren, um die neuesten Funktionen zu erhalten.",
   appUpdate_installing: "Update wird heruntergeladen und installiert...",
   appUpdate_installAndRestart: "Aktualisieren & neu starten",
+
+  settings_updates: "Updates",
+  settings_appUpdateAvailable: "App-Update verfügbar",
+  settings_updateAppBtn: "App aktualisieren",
+  settings_ytdlpUpdateAvailable: "yt-dlp-Update verfügbar",
+  settings_updateYtdlpBtn: "yt-dlp aktualisieren",
+  settings_upToDate: "✓ Alles ist aktuell",
+  settings_checkForUpdates: "Nach Updates suchen",
+  settings_checking: "Wird geprüft…",
+  settings_checkFailed: "Updates konnten nicht geprüft werden",
+
+  progress_connecting: "Verbindung wird hergestellt…",
+  progress_processing: "Verarbeitung",
+  progress_completed: "Abgeschlossen",
+  progress_failed: "Fehlgeschlagen",
+  progress_unknownError: "Unbekannter Fehler",
+  progress_queued: "Warteschlange",
+  progress_cancelled: "Abgebrochen",
 };
 
 const pt: Translations = {
@@ -579,6 +671,24 @@ const pt: Translations = {
   appUpdate_desc: "Uma nova versão do YT Downloader está disponível. Atualize agora para obter os recursos mais recentes.",
   appUpdate_installing: "Baixando e instalando atualização...",
   appUpdate_installAndRestart: "Atualizar e reiniciar",
+
+  settings_updates: "Atualizações",
+  settings_appUpdateAvailable: "Atualização do app disponível",
+  settings_updateAppBtn: "Atualizar app",
+  settings_ytdlpUpdateAvailable: "Atualização do yt-dlp disponível",
+  settings_updateYtdlpBtn: "Atualizar yt-dlp",
+  settings_upToDate: "✓ Tudo está atualizado",
+  settings_checkForUpdates: "Verificar atualizações",
+  settings_checking: "Verificando…",
+  settings_checkFailed: "Não foi possível verificar atualizações",
+
+  progress_connecting: "Conectando…",
+  progress_processing: "Processando",
+  progress_completed: "Concluído",
+  progress_failed: "Falhou",
+  progress_unknownError: "Erro desconhecido",
+  progress_queued: "Na fila",
+  progress_cancelled: "Cancelado",
 };
 
 const ar: Translations = {
@@ -666,6 +776,24 @@ const ar: Translations = {
   appUpdate_desc: "يتوفر إصدار جديد من YT Downloader. حدّث الآن للحصول على أحدث الميزات والإصلاحات.",
   appUpdate_installing: "جارٍ تنزيل التحديث وتثبيته...",
   appUpdate_installAndRestart: "تحديث وإعادة تشغيل",
+
+  settings_updates: "التحديثات",
+  settings_appUpdateAvailable: "يتوفر تحديث للتطبيق",
+  settings_updateAppBtn: "تحديث التطبيق",
+  settings_ytdlpUpdateAvailable: "يتوفر تحديث لـ yt-dlp",
+  settings_updateYtdlpBtn: "تحديث yt-dlp",
+  settings_upToDate: "✓ كل شيء محدّث",
+  settings_checkForUpdates: "التحقق من التحديثات",
+  settings_checking: "جارٍ التحقق…",
+  settings_checkFailed: "تعذّر التحقق من التحديثات",
+
+  progress_connecting: "جارٍ الاتصال…",
+  progress_processing: "جارٍ المعالجة",
+  progress_completed: "مكتمل",
+  progress_failed: "فشل",
+  progress_unknownError: "خطأ غير معروف",
+  progress_queued: "في الانتظار",
+  progress_cancelled: "ملغى",
 };
 
 const ja: Translations = {
@@ -753,6 +881,24 @@ const ja: Translations = {
   appUpdate_desc: "YT Downloaderの新しいバージョンが利用可能です。今すぐ更新して最新の機能を入手してください。",
   appUpdate_installing: "アップデートをダウンロード・インストール中...",
   appUpdate_installAndRestart: "更新して再起動",
+
+  settings_updates: "アップデート",
+  settings_appUpdateAvailable: "アプリのアップデートがあります",
+  settings_updateAppBtn: "アプリを更新",
+  settings_ytdlpUpdateAvailable: "yt-dlp のアップデートがあります",
+  settings_updateYtdlpBtn: "yt-dlp を更新",
+  settings_upToDate: "✓ すべて最新です",
+  settings_checkForUpdates: "アップデートを確認",
+  settings_checking: "確認中…",
+  settings_checkFailed: "更新を確認できませんでした",
+
+  progress_connecting: "接続中…",
+  progress_processing: "処理中",
+  progress_completed: "完了",
+  progress_failed: "失敗",
+  progress_unknownError: "不明なエラー",
+  progress_queued: "待機中",
+  progress_cancelled: "キャンセル済み",
 };
 
 const ko: Translations = {
@@ -840,6 +986,24 @@ const ko: Translations = {
   appUpdate_desc: "YT Downloader의 새 버전을 사용할 수 있습니다. 지금 업데이트하여 최신 기능을 받으세요.",
   appUpdate_installing: "업데이트를 다운로드하고 설치하는 중...",
   appUpdate_installAndRestart: "업데이트 및 재시작",
+
+  settings_updates: "업데이트",
+  settings_appUpdateAvailable: "앱 업데이트 사용 가능",
+  settings_updateAppBtn: "앱 업데이트",
+  settings_ytdlpUpdateAvailable: "yt-dlp 업데이트 사용 가능",
+  settings_updateYtdlpBtn: "yt-dlp 업데이트",
+  settings_upToDate: "✓ 모두 최신 상태입니다",
+  settings_checkForUpdates: "업데이트 확인",
+  settings_checking: "확인 중…",
+  settings_checkFailed: "업데이트를 확인할 수 없습니다",
+
+  progress_connecting: "연결 중…",
+  progress_processing: "처리 중",
+  progress_completed: "완료됨",
+  progress_failed: "실패",
+  progress_unknownError: "알 수 없는 오류",
+  progress_queued: "대기 중",
+  progress_cancelled: "취소됨",
 };
 
 const zh: Translations = {
@@ -927,6 +1091,24 @@ const zh: Translations = {
   appUpdate_desc: "YT Downloader 有新版本可用。立即更新以获取最新功能和修复。",
   appUpdate_installing: "正在下载并安装更新...",
   appUpdate_installAndRestart: "更新并重启",
+
+  settings_updates: "更新",
+  settings_appUpdateAvailable: "有可用的应用更新",
+  settings_updateAppBtn: "更新应用",
+  settings_ytdlpUpdateAvailable: "有可用的 yt-dlp 更新",
+  settings_updateYtdlpBtn: "更新 yt-dlp",
+  settings_upToDate: "✓ 一切都是最新的",
+  settings_checkForUpdates: "检查更新",
+  settings_checking: "检查中…",
+  settings_checkFailed: "无法检查更新",
+
+  progress_connecting: "连接中…",
+  progress_processing: "处理中",
+  progress_completed: "已完成",
+  progress_failed: "失败",
+  progress_unknownError: "未知错误",
+  progress_queued: "排队中",
+  progress_cancelled: "已取消",
 };
 
 // ─── Translation map ─────────────────────────────────────────────────────────

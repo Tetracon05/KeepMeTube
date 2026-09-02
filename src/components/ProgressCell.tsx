@@ -1,6 +1,7 @@
 import React from "react";
 import type { DownloadEntry } from "../types";
 import { IconAlertTriangle } from "./Icons";
+import { useLanguage } from "../hooks/useLanguage";
 
 interface ProgressCellProps {
   download: DownloadEntry;
@@ -8,6 +9,7 @@ interface ProgressCellProps {
 
 export const ProgressCell: React.FC<ProgressCellProps> = ({ download }) => {
   const { status, progress, speed, error } = download;
+  const { t } = useLanguage();
 
   // "Connecting" phase: download has started but no bytes received yet
   const isConnecting = status === "downloading" && progress === 0 && !speed;
@@ -20,7 +22,7 @@ export const ProgressCell: React.FC<ProgressCellProps> = ({ download }) => {
             <div className="progress-bar-track">
               <div className="progress-bar-fill progress-bar-indeterminate connecting" />
             </div>
-            <span className="progress-label connecting-label">Connecting…</span>
+            <span className="progress-label connecting-label">{t("progress_connecting")}</span>
           </div>
         ) : (
           <div className="progress-downloading">
@@ -43,28 +45,28 @@ export const ProgressCell: React.FC<ProgressCellProps> = ({ download }) => {
           <div className="progress-bar-track">
             <div className="progress-bar-fill processing progress-bar-indeterminate" />
           </div>
-          <span className="progress-label processing-label">Processing</span>
+          <span className="progress-label processing-label">{t("progress_processing")}</span>
         </div>
       )}
 
       {status === "completed" && (
-        <span className="progress-label completed-label">Completed</span>
+        <span className="progress-label completed-label">{t("progress_completed")}</span>
       )}
 
       {status === "failed" && (
-        <div className="progress-failed" title={error || "Unknown error"}>
-          <span className="progress-label failed-label">Failed</span>
+        <div className="progress-failed" title={error || t("progress_unknownError")}>
+          <span className="progress-label failed-label">{t("progress_failed")}</span>
           {error && <span className="failed-icon" title={error}><IconAlertTriangle size={14} /></span>}
         </div>
       )}
 
 
       {status === "pending" && (
-        <span className="progress-label pending-label">Queued</span>
+        <span className="progress-label pending-label">{t("progress_queued")}</span>
       )}
 
       {status === "cancelled" && (
-        <span className="progress-label cancelled-label">Cancelled</span>
+        <span className="progress-label cancelled-label">{t("progress_cancelled")}</span>
       )}
     </div>
   );

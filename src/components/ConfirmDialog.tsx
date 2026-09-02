@@ -32,24 +32,31 @@ export const ConfirmDialog: React.FC = () => {
   return (
     <div className="modal-overlay" onClick={handleCancel}>
       <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="confirm-icon-wrapper">
-          <IconAlertTriangle size={28} className="confirm-icon" />
+        <div className="modal-header">
+          <h2 className="modal-title">Delete {count > 1 ? `${count} files` : "file"}?</h2>
+          <button className="modal-close" onClick={handleCancel}>X</button>
         </div>
-        <h3 className="confirm-title">Delete {count > 1 ? `${count} files` : "file"}?</h3>
-        <p className="confirm-message">
-          {singleTitle ? (
-            <>
-              Are you sure you want to permanently delete{" "}
-              <strong>"{singleTitle}"</strong>? This cannot be undone.
-            </>
-          ) : (
-            <>
-              Are you sure you want to permanently delete{" "}
-              <strong>{count} files</strong>? This cannot be undone.
-            </>
-          )}
-        </p>
-        <div className="confirm-actions">
+
+        <div className="modal-body">
+          <div className="confirm-icon-wrapper">
+            <IconAlertTriangle size={28} className="confirm-icon" />
+          </div>
+          <p className="confirm-message">
+            {singleTitle ? (
+              <>
+                Are you sure you want to permanently delete{" "}
+                <strong>"{singleTitle}"</strong>? This cannot be undone.
+              </>
+            ) : (
+              <>
+                Are you sure you want to permanently delete{" "}
+                <strong>{count} files</strong>? This cannot be undone.
+              </>
+            )}
+          </p>
+        </div>
+
+        <div className="modal-footer">
           <button className="btn btn-secondary" onClick={handleCancel}>
             Cancel
           </button>

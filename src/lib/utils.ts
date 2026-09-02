@@ -81,12 +81,33 @@ export function deduplicateResolutions(
 }
 
 /**
- * Format an ISO date string into date + time.
+ * Maps the app's LangCode to a BCP-47 locale for Intl date/time formatting.
+ */
+const LOCALE_MAP: Record<string, string> = {
+  en: "en-US",
+  tr: "tr-TR",
+  es: "es-ES",
+  fr: "fr-FR",
+  de: "de-DE",
+  pt: "pt-BR",
+  ar: "ar-SA",
+  ja: "ja-JP",
+  ko: "ko-KR",
+  zh: "zh-CN",
+};
+
+export function langToLocale(lang?: string): string {
+  return (lang && LOCALE_MAP[lang]) || "en-US";
+}
+
+/**
+ * Format an ISO date string into date + time, localized to `lang`.
  * Today → "10:35 · Aug 20"
  * Other → "Aug 20 · 10:35"  (with year if different)
  */
-export function formatDate(isoString: string): string {
+export function formatDate(isoString: string, lang?: string): string {
   try {
+    const locale = langToLocale(lang);
     const date = new Date(isoString);
     const now = new Date();
     const isToday =
@@ -94,11 +115,11 @@ export function formatDate(isoString: string): string {
       date.getMonth() === now.getMonth() &&
       date.getDate() === now.getDate();
 
-    const time = date.toLocaleTimeString([], {
+    const time = date.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     });
-    const datePart = date.toLocaleDateString([], {
+    const datePart = date.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: now.getFullYear() !== date.getFullYear() ? "numeric" : undefined,

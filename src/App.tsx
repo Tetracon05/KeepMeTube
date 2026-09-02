@@ -45,37 +45,38 @@ function App() {
     return () => { unlisten?.(); };
   }, [languageSelected]);
 
-  // ── Fire both update checks concurrently in the background ───────────────
+  // Re-runs both update checks and reports back which ones failed, so callers
+  // can surface a real error state instead of silently treating a failed
+  // check the same as "no update available".
+  const runUpdateChecks = async (): Promise<{ appError: boolean; ytError: boolean }> => {
+    const [appResult, ytResult] = await Promise.allSettled([
+      api.checkAppUpdate(),
+      api.checkYtDlpUpdate(),
+    ]);
+
+    if (appResult.status === "fulfilled" && appResult.value) {
+      setPendingAppUpdate(appResult.value);
+    } else if (appResult.status === "rejected") {
+      console.error("App update check failed:", appResult.reason);
+    }
+
+    if (ytResult.status === "fulfilled" && ytResult.value?.update_available) {
+      setPendingYtDlpUpdate(ytResult.value);
+    } else if (ytResult.status === "rejected") {
+      console.error("yt-dlp update check failed:", ytResult.reason);
+    }
+
+    return {
+      appError: appResult.status === "rejected",
+      ytError: ytResult.status === "rejected",
+    };
+  };
+
+  // ── Fire both update checks once in the background on launch ─────────────
   useEffect(() => {
     if (!languageSelected) return;
-
-    Promise.allSettled([
-      api.checkAppUpdate(),
-      api.checkYtDlpUpdate(),
-    ]).then(([appResult, ytResult]) => {
-      if (appResult.status === "fulfilled" && appResult.value) {
-        setPendingAppUpdate(appResult.value);
-      }
-      if (ytResult.status === "fulfilled" && ytResult.value?.update_available) {
-        setPendingYtDlpUpdate(ytResult.value);
-      }
-    });
+    runUpdateChecks();
   }, [languageSelected]);
-
-  // Helper to re-run update checks on demand (used by SettingsPanel)
-  const runUpdateChecks = () => {
-    Promise.allSettled([
-      api.checkAppUpdate(),
-      api.checkYtDlpUpdate(),
-    ]).then(([appResult, ytResult]) => {
-      if (appResult.status === "fulfilled" && appResult.value) {
-        setPendingAppUpdate(appResult.value);
-      }
-      if (ytResult.status === "fulfilled" && ytResult.value?.update_available) {
-        setPendingYtDlpUpdate(ytResult.value);
-      }
-    });
-  };
 
   // ── Render ────────────────────────────────────────────────────────────────
 

@@ -3,6 +3,16 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useLanguage } from "../hooks/useLanguage";
 import { LANGUAGES, LangCode, setLanguage } from "../lib/i18n";
 import type { AppUpdateInfo, UpdateCheckResult } from "../types";
+import {
+  IconShield,
+  IconPalette,
+  IconGlobe,
+  IconRefreshCw,
+  IconSun,
+  IconMonitor,
+  IconMoon,
+  IconCheckCircle,
+} from "./Icons";
 
 type ThemeMode = "system" | "light" | "dark";
 
@@ -19,8 +29,8 @@ interface SettingsPanelProps {
   onTriggerAppUpdate: () => void;
   /** Opens the yt-dlp update modal */
   onTriggerYtDlpUpdate: () => void;
-  /** Re-runs both update checks on demand */
-  onCheckUpdates: () => void;
+  /** Re-runs both update checks on demand; resolves with which check(s) failed */
+  onCheckUpdates: () => Promise<{ appError: boolean; ytError: boolean }>;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -43,6 +53,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   // Update check button local states
   const [checking, setChecking] = useState(false);
   const [checkedOnce, setCheckedOnce] = useState(false);
+  const [checkError, setCheckError] = useState(false);
 
   const cookiesFileName = cookiesFile
     ? cookiesFile.split(/[/\\]/).pop() || cookiesFile
@@ -78,16 +89,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const handleCheckUpdates = async () => {
     setChecking(true);
-    await new Promise<void>((resolve) => {
-      onCheckUpdates();
-      // Give the checks a moment to fire; they're async — just release the
-      // button after a short delay so it feels responsive.
-      setTimeout(() => {
-        setCheckedOnce(true);
-        setChecking(false);
-        resolve();
-      }, 1200);
-    });
+    // Clear the stale result badge from a previous check so it doesn't
+    // render alongside the new checking spinner while this one is in flight.
+    setCheckedOnce(false);
+    setCheckError(false);
+    const { appError, ytError } = await onCheckUpdates();
+    // A failed check must never be reported as "up to date" — that's a
+    // false positive. Surface it as a distinct error state instead.
+    setCheckError(appError || ytError);
+    setCheckedOnce(true);
+    setChecking(false);
   };
 
   if (!isOpen) return null;
@@ -113,14 +124,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
           {/* ── Section: Cookies ──────────────────── */}
           <section className="settings-section">
-            <h3 className="settings-section__title">🍪 {t("settings_cookies")}</h3>
+            <h3 className="settings-section__title"><IconShield size={16} /> {t("settings_cookies")}</h3>
             <p className="settings-section__desc">{t("settings_cookiesDesc")}</p>
 
             <div className="settings-cookies-row">
               {cookiesFile ? (
                 <>
                   <div className="settings-cookies-file">
-                    <span className="settings-cookies-icon">✓</span>
+                    <span className="settings-cookies-icon"><IconCheckCircle size={14} /></span>
                     <span className="settings-cookies-name" title={cookiesFile}>
                       {cookiesFileName}
                     </span>
@@ -169,11 +180,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
           {/* ── Section: Appearance ──────────────── */}
           <section className="settings-section">
-            <h3 className="settings-section__title">🎨 {t("settings_appearance")}</h3>
+            <h3 className="settings-section__title"><IconPalette size={16} /> {t("settings_appearance")}</h3>
 
             <div className="theme-selector">
               {(["light", "system", "dark"] as ThemeMode[]).map((m) => {
-                const icons = { light: "☀️", system: "💻", dark: "🌙" };
+                const icons = { light: IconSun, system: IconMonitor, dark: IconMoon };
+                const ThemeIcon = icons[m];
                 const labels: Record<ThemeMode, string> = {
                   light: t("settings_themeLight"),
                   dark: t("settings_themeDark"),
@@ -185,7 +197,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     className={`theme-option ${themeMode === m ? "theme-option--active" : ""}`}
                     onClick={() => onSetTheme(m)}
                   >
-                    <span className="theme-option__icon">{icons[m]}</span>
+                    <span className="theme-option__icon"><ThemeIcon size={18} /></span>
                     <span className="theme-option__label">{labels[m]}</span>
                   </button>
                 );
@@ -197,7 +209,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
           {/* ── Section: Language ─────────────────── */}
           <section className="settings-section">
-            <h3 className="settings-section__title">🌐 {t("settings_language")}</h3>
+            <h3 className="settings-section__title"><IconGlobe size={16} /> {t("settings_language")}</h3>
 
             <div className="lang-selector-grid">
               {LANGUAGES.map((language) => (
@@ -217,7 +229,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
           {/* ── Section: Updates ──────────────────── */}
           <section className="settings-section">
-            <h3 className="settings-section__title">🔄 Updates</h3>
+            <h3 className="settings-section__title"><IconRefreshCw size={16} /> {t("settings_updates")}</h3>
 
             <div className="settings-updates-row">
               {/* App update button */}
@@ -225,13 +237,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="settings-update-item">
                   <div className="settings-update-badge">
                     <span className="settings-update-badge__dot" />
-                    App update available — <strong>v{pendingAppUpdate!.version}</strong>
+                    {t("settings_appUpdateAvailable")} — <strong>v{pendingAppUpdate!.version}</strong>
                   </div>
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={onTriggerAppUpdate}
                   >
-                    Update App
+                    {t("settings_updateAppBtn")}
                   </button>
                 </div>
               ) : (
@@ -240,31 +252,38 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <div className="settings-update-item">
                     <div className="settings-update-badge">
                       <span className="settings-update-badge__dot" />
-                      yt-dlp update available — <strong>{pendingYtDlpUpdate!.latest_version}</strong>
+                      {t("settings_ytdlpUpdateAvailable")} — <strong>{pendingYtDlpUpdate!.latest_version}</strong>
                     </div>
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={onTriggerYtDlpUpdate}
                     >
-                      Update yt-dlp
+                      {t("settings_updateYtdlpBtn")}
                     </button>
                   </div>
                 ) : (
-                  /* Idle: no pending updates */
+                  /* Idle: no pending updates. The button's label is always
+                     static — the in-progress/result state is shown as a
+                     separate status badge to its left (same pattern as the
+                     pending-update rows above), so the button itself never
+                     swaps content and can't glitch on re-layout. */
                   <div className="settings-update-item settings-update-item--idle">
-                    {checkedOnce && !hasAnyUpdate && (
-                      <span className="settings-update-uptodate">✓ Everything is up to date</span>
-                    )}
+                    {checking ? (
+                      <div className="settings-update-badge">
+                        <div className="spinner spinner-small" />
+                        {t("settings_checking")}
+                      </div>
+                    ) : checkedOnce && checkError ? (
+                      <span className="settings-update-error">{t("settings_checkFailed")}</span>
+                    ) : checkedOnce && !hasAnyUpdate ? (
+                      <span className="settings-update-uptodate">{t("settings_upToDate")}</span>
+                    ) : null}
                     <button
-                      className="btn btn-secondary btn-sm"
+                      className="btn btn-secondary btn-sm settings-update-check-btn"
                       onClick={handleCheckUpdates}
                       disabled={checking}
                     >
-                      {checking ? (
-                        <><div className="spinner spinner-small" />&nbsp;Checking…</>
-                      ) : (
-                        "Check for Updates"
-                      )}
+                      {t("settings_checkForUpdates")}
                     </button>
                   </div>
                 )
@@ -275,13 +294,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="settings-update-item">
                   <div className="settings-update-badge">
                     <span className="settings-update-badge__dot" />
-                    yt-dlp — <strong>{pendingYtDlpUpdate!.latest_version}</strong>
+                    {t("settings_ytdlpUpdateAvailable")} — <strong>{pendingYtDlpUpdate!.latest_version}</strong>
                   </div>
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={onTriggerYtDlpUpdate}
                   >
-                    Update yt-dlp
+                    {t("settings_updateYtdlpBtn")}
                   </button>
                 </div>
               )}

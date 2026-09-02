@@ -4,6 +4,8 @@ import type {
   DownloadEntry,
   ProgressEvent,
   ContextMenuPosition,
+  SortKey,
+  SortDirection,
 } from "../types";
 import * as api from "../lib/tauri";
 
@@ -16,10 +18,13 @@ interface DownloadStore {
   contextMenu: { position: ContextMenuPosition; downloadId: string } | null;
   renameDialogId: string | null;
   confirmDeleteIds: string[] | null;
+  sortKey: SortKey | null;
+  sortDirection: SortDirection;
 
   // Actions
   setDownloads: (downloads: DownloadEntry[]) => void;
   selectId: (id: string, multiKey: boolean) => void;
+  selectAll: () => void;
   clearSelection: () => void;
   setMultiSelectMode: (on: boolean) => void;
   toggleMultiSelectMode: () => void;
@@ -29,6 +34,7 @@ interface DownloadStore {
   ) => void;
   setRenameDialogId: (id: string | null) => void;
   setConfirmDeleteIds: (ids: string[] | null) => void;
+  toggleSort: (key: SortKey) => void;
   updateProgress: (event: ProgressEvent) => void;
   loadDownloads: () => Promise<void>;
   addDownload: (entry: DownloadEntry) => void;
@@ -45,6 +51,8 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
   contextMenu: null,
   renameDialogId: null,
   confirmDeleteIds: null,
+  sortKey: null,
+  sortDirection: "asc",
 
   // Setters
   setDownloads: (downloads) => set({ downloads }),
@@ -64,6 +72,12 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
     });
   },
 
+  selectAll: () =>
+    set((state) => ({
+      selectedIds: new Set(state.downloads.map((dl) => dl.id)),
+      isMultiSelectMode: true,
+    })),
+
   clearSelection: () => set({ selectedIds: new Set() }),
 
   setMultiSelectMode: (on) =>
@@ -80,6 +94,14 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
   setRenameDialogId: (id) => set({ renameDialogId: id }),
   setConfirmDeleteIds: (ids) => set({ confirmDeleteIds: ids }),
 
+  toggleSort: (key) =>
+    set((state) => {
+      if (state.sortKey === key) {
+        return { sortDirection: state.sortDirection === "asc" ? "desc" : "asc" };
+      }
+      return { sortKey: key, sortDirection: "asc" };
+    }),
+
   // Update download progress from Tauri event
   updateProgress: (event: ProgressEvent) => {
     set((state) => ({
@@ -91,6 +113,7 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
               progress: event.progress,
               speed: event.speed,
               error: event.error,
+              file_size: event.file_size ?? dl.file_size,
             }
           : dl
       ),
