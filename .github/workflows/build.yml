@@ -95,5 +95,8 @@ jobs:
             - **Windows**: Run the `.msi` or `.exe` installer.
             - **Linux**: Run the `.AppImage` file.
           releaseDraft: false
-          prerelease: false
+          # Marked as beta while the update system and other core-feature
+          # regressions are being verified. Flip back to false once the
+          # project returns to a stable versioning track.
+          prerelease: true
           args: ${{ matrix.args }}
