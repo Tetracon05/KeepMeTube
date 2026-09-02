@@ -1,6 +1,6 @@
 [package]
 name = "yt-dlp-gui"
-version = "26.0.0-beta"
+version = "26.0.0-1"
 description = "A clean desktop GUI for downloading YouTube videos and audio"
 authors = ["you"]
 edition = "2021"

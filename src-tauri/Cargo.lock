@@ -5473,7 +5473,7 @@ dependencies = [
 
 [[package]]
 name = "yt-dlp-gui"
-version = "26.0.0-beta"
+version = "26.0.0-1"
 dependencies = [
  "chrono",
  "dirs",
