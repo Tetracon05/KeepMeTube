@@ -1,5 +1,4 @@
 import React from "react";
-import { useDownloadStore } from "../store/useDownloadStore";
 import {
   IconPlus,
   IconFolderOpen,
@@ -8,8 +7,8 @@ import {
   IconTrash,
   IconCheckSquare,
 } from "./Icons";
-import * as api from "../lib/tauri";
 import { useLanguage } from "../hooks/useLanguage";
+import { useDownloadActions } from "../hooks/useDownloadActions";
 
 interface TopBarProps {
   onOpenSettings: () => void;
@@ -18,42 +17,18 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({ onOpenSettings }) => {
   const { t } = useLanguage();
   const {
-    downloads,
-    selectedIds,
+    selectedArray,
+    singleSelected,
+    hasSelection,
+    isCompleted,
     isMultiSelectMode,
     setAddPanelOpen,
-    removeDownloadsFromList,
-    setRenameDialogId,
-    setConfirmDeleteIds,
     toggleMultiSelectMode,
-  } = useDownloadStore();
-
-  const selectedArray = [...selectedIds];
-  const singleSelected =
-    selectedArray.length === 1
-      ? downloads.find((d) => d.id === selectedArray[0])
-      : null;
-  const hasSelection = selectedArray.length > 0;
-
-  const isCompleted = singleSelected?.status === "completed";
-
-  const handleDelete = () => {
-    if (!hasSelection) return;
-    setConfirmDeleteIds(selectedArray);
-  };
-
-  const handleRemove = async () => {
-    for (const id of selectedArray) {
-      try { await api.removeDownload(id); }
-      catch (err) { console.error("Failed to remove:", id, err); }
-    }
-    removeDownloadsFromList(selectedArray);
-  };
-
-  const handleShowInFolder = async () => {
-    if (!singleSelected?.file_path) return;
-    await api.showInFolder(singleSelected.file_path);
-  };
+    handleRename,
+    handleDelete,
+    handleRemove,
+    handleShowInFolder,
+  } = useDownloadActions();
 
   return (
     <div className="top-bar">
@@ -85,7 +60,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSettings }) => {
             </button>
             <button
               className="btn btn-action"
-              onClick={() => setRenameDialogId(singleSelected.id)}
+              onClick={handleRename}
               title={t("topBar_rename")}
             >
               <IconEdit size={15} />

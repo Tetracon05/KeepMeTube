@@ -117,6 +117,14 @@ const en = {
   common_close: "Close",
   common_save: "Save",
 
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "Delete file?",
+  confirmDelete_titleMultiple: "Delete {count} files?",
+  confirmDelete_messageSingle: "Are you sure you want to permanently delete \"{name}\"? This cannot be undone.",
+  confirmDelete_messageMultiple: "Are you sure you want to permanently delete {count} files? This cannot be undone.",
+  confirmDelete_cancel: "Cancel",
+  confirmDelete_delete: "Delete",
+
   // yt-dlp update dialog
   update_title: "yt-dlp Update Available",
   update_desc: "A new version of yt-dlp is available. Keeping yt-dlp up to date helps avoid download errors.",
@@ -145,6 +153,12 @@ const en = {
   settings_checkForUpdates: "Check for Updates",
   settings_checking: "Checking…",
   settings_checkFailed: "Couldn't check for updates",
+
+  // Settings — about section
+  settings_about: "About",
+  settings_aboutVersion: "Version",
+  settings_aboutRepo: "GitHub Repository",
+  settings_aboutCreatedBy: "Created by T3tracon",
 
   // Progress column statuses
   progress_connecting: "Connecting…",
@@ -235,6 +249,14 @@ const tr: Translations = {
   common_close: "Kapat",
   common_save: "Kaydet",
 
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "Dosyayı sil?",
+  confirmDelete_titleMultiple: "{count} dosyayı sil?",
+  confirmDelete_messageSingle: "\"{name}\" dosyasını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+  confirmDelete_messageMultiple: "{count} dosyayı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+  confirmDelete_cancel: "İptal",
+  confirmDelete_delete: "Sil",
+
   update_title: "yt-dlp Güncellemesi Mevcut",
   update_desc: "yt-dlp'nin yeni bir sürümü var. Güncel tutmak indirme hatalarını önler.",
   update_current: "Mevcut sürüm:",
@@ -261,6 +283,12 @@ const tr: Translations = {
   settings_checkForUpdates: "Güncellemeleri Kontrol Et",
   settings_checking: "Kontrol ediliyor…",
   settings_checkFailed: "Güncellemeler kontrol edilemedi",
+
+  // Settings — about section
+  settings_about: "Hakkında",
+  settings_aboutVersion: "Sürüm",
+  settings_aboutRepo: "GitHub Deposu",
+  settings_aboutCreatedBy: "T3tracon tarafından oluşturuldu",
 
   progress_connecting: "Bağlanıyor…",
   progress_processing: "İşleniyor",
@@ -341,6 +369,14 @@ const es: Translations = {
   common_clear: "Limpiar",
   common_close: "Cerrar",
   common_save: "Guardar",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "¿Eliminar archivo?",
+  confirmDelete_titleMultiple: "¿Eliminar {count} archivos?",
+  confirmDelete_messageSingle: "¿Seguro que quieres eliminar permanentemente \"{name}\"? Esta acción no se puede deshacer.",
+  confirmDelete_messageMultiple: "¿Seguro que quieres eliminar permanentemente {count} archivos? Esta acción no se puede deshacer.",
+  confirmDelete_cancel: "Cancelar",
+  confirmDelete_delete: "Eliminar",
   update_title: "Actualización de yt-dlp disponible",
   update_desc: "Hay una nueva versión de yt-dlp. Mantenerlo actualizado evita errores de descarga.",
   update_current: "Versión actual:",
@@ -366,6 +402,12 @@ const es: Translations = {
   settings_checkForUpdates: "Buscar actualizaciones",
   settings_checking: "Comprobando…",
   settings_checkFailed: "No se pudieron buscar actualizaciones",
+
+  // Settings — about section
+  settings_about: "Acerca de",
+  settings_aboutVersion: "Versión",
+  settings_aboutRepo: "Repositorio de GitHub",
+  settings_aboutCreatedBy: "Creado por T3tracon",
 
   progress_connecting: "Conectando…",
   progress_processing: "Procesando",
@@ -446,6 +488,14 @@ const fr: Translations = {
   common_clear: "Effacer",
   common_close: "Fermer",
   common_save: "Enregistrer",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "Supprimer le fichier ?",
+  confirmDelete_titleMultiple: "Supprimer {count} fichiers ?",
+  confirmDelete_messageSingle: "Voulez-vous vraiment supprimer définitivement « {name} » ? Cette action est irréversible.",
+  confirmDelete_messageMultiple: "Voulez-vous vraiment supprimer définitivement {count} fichiers ? Cette action est irréversible.",
+  confirmDelete_cancel: "Annuler",
+  confirmDelete_delete: "Supprimer",
   update_title: "Mise à jour yt-dlp disponible",
   update_desc: "Une nouvelle version de yt-dlp est disponible. Rester à jour évite les erreurs.",
   update_current: "Version actuelle :",
@@ -471,6 +521,12 @@ const fr: Translations = {
   settings_checkForUpdates: "Vérifier les mises à jour",
   settings_checking: "Vérification…",
   settings_checkFailed: "Impossible de vérifier les mises à jour",
+
+  // Settings — about section
+  settings_about: "À propos",
+  settings_aboutVersion: "Version",
+  settings_aboutRepo: "Dépôt GitHub",
+  settings_aboutCreatedBy: "Créé par T3tracon",
 
   progress_connecting: "Connexion…",
   progress_processing: "Traitement",
@@ -551,6 +607,14 @@ const de: Translations = {
   common_clear: "Löschen",
   common_close: "Schließen",
   common_save: "Speichern",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "Datei löschen?",
+  confirmDelete_titleMultiple: "{count} Dateien löschen?",
+  confirmDelete_messageSingle: "Möchtest du \"{name}\" wirklich endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+  confirmDelete_messageMultiple: "Möchtest du {count} Dateien wirklich endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+  confirmDelete_cancel: "Abbrechen",
+  confirmDelete_delete: "Löschen",
   update_title: "yt-dlp Update verfügbar",
   update_desc: "Eine neue Version von yt-dlp ist verfügbar. Aktuell bleiben vermeidet Download-Fehler.",
   update_current: "Aktuelle Version:",
@@ -576,6 +640,12 @@ const de: Translations = {
   settings_checkForUpdates: "Nach Updates suchen",
   settings_checking: "Wird geprüft…",
   settings_checkFailed: "Updates konnten nicht geprüft werden",
+
+  // Settings — about section
+  settings_about: "Über",
+  settings_aboutVersion: "Version",
+  settings_aboutRepo: "GitHub-Repository",
+  settings_aboutCreatedBy: "Erstellt von T3tracon",
 
   progress_connecting: "Verbindung wird hergestellt…",
   progress_processing: "Verarbeitung",
@@ -656,6 +726,14 @@ const pt: Translations = {
   common_clear: "Limpar",
   common_close: "Fechar",
   common_save: "Salvar",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "Excluir arquivo?",
+  confirmDelete_titleMultiple: "Excluir {count} arquivos?",
+  confirmDelete_messageSingle: "Tem certeza de que deseja excluir permanentemente \"{name}\"? Esta ação não pode ser desfeita.",
+  confirmDelete_messageMultiple: "Tem certeza de que deseja excluir permanentemente {count} arquivos? Esta ação não pode ser desfeita.",
+  confirmDelete_cancel: "Cancelar",
+  confirmDelete_delete: "Excluir",
   update_title: "Atualização do yt-dlp disponível",
   update_desc: "Uma nova versão do yt-dlp está disponível. Manter atualizado evita erros de download.",
   update_current: "Versão atual:",
@@ -681,6 +759,12 @@ const pt: Translations = {
   settings_checkForUpdates: "Verificar atualizações",
   settings_checking: "Verificando…",
   settings_checkFailed: "Não foi possível verificar atualizações",
+
+  // Settings — about section
+  settings_about: "Sobre",
+  settings_aboutVersion: "Versão",
+  settings_aboutRepo: "Repositório do GitHub",
+  settings_aboutCreatedBy: "Criado por T3tracon",
 
   progress_connecting: "Conectando…",
   progress_processing: "Processando",
@@ -761,6 +845,14 @@ const ar: Translations = {
   common_clear: "مسح",
   common_close: "إغلاق",
   common_save: "حفظ",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "حذف الملف؟",
+  confirmDelete_titleMultiple: "حذف {count} ملفات؟",
+  confirmDelete_messageSingle: "هل أنت متأكد أنك تريد حذف \"{name}\" نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.",
+  confirmDelete_messageMultiple: "هل أنت متأكد أنك تريد حذف {count} ملفات نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.",
+  confirmDelete_cancel: "إلغاء",
+  confirmDelete_delete: "حذف",
   update_title: "تحديث yt-dlp متاح",
   update_desc: "يتوفر إصدار جديد من yt-dlp. يساعد الإبقاء على تحديثه في تجنب أخطاء التنزيل.",
   update_current: "الإصدار الحالي:",
@@ -786,6 +878,12 @@ const ar: Translations = {
   settings_checkForUpdates: "التحقق من التحديثات",
   settings_checking: "جارٍ التحقق…",
   settings_checkFailed: "تعذّر التحقق من التحديثات",
+
+  // Settings — about section
+  settings_about: "حول",
+  settings_aboutVersion: "الإصدار",
+  settings_aboutRepo: "مستودع GitHub",
+  settings_aboutCreatedBy: "من إنشاء T3tracon",
 
   progress_connecting: "جارٍ الاتصال…",
   progress_processing: "جارٍ المعالجة",
@@ -866,6 +964,14 @@ const ja: Translations = {
   common_clear: "クリア",
   common_close: "閉じる",
   common_save: "保存",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "ファイルを削除しますか?",
+  confirmDelete_titleMultiple: "{count}件のファイルを削除しますか?",
+  confirmDelete_messageSingle: "「{name}」を完全に削除してもよろしいですか?この操作は取り消せません。",
+  confirmDelete_messageMultiple: "{count}件のファイルを完全に削除してもよろしいですか?この操作は取り消せません。",
+  confirmDelete_cancel: "キャンセル",
+  confirmDelete_delete: "削除",
   update_title: "yt-dlp アップデートあり",
   update_desc: "yt-dlpの新しいバージョンが利用可能です。最新に保つとエラーを防げます。",
   update_current: "現在のバージョン:",
@@ -891,6 +997,12 @@ const ja: Translations = {
   settings_checkForUpdates: "アップデートを確認",
   settings_checking: "確認中…",
   settings_checkFailed: "更新を確認できませんでした",
+
+  // Settings — about section
+  settings_about: "アプリについて",
+  settings_aboutVersion: "バージョン",
+  settings_aboutRepo: "GitHub リポジトリ",
+  settings_aboutCreatedBy: "T3tracon 作成",
 
   progress_connecting: "接続中…",
   progress_processing: "処理中",
@@ -971,6 +1083,14 @@ const ko: Translations = {
   common_clear: "지우기",
   common_close: "닫기",
   common_save: "저장",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "파일을 삭제하시겠습니까?",
+  confirmDelete_titleMultiple: "{count}개 파일을 삭제하시겠습니까?",
+  confirmDelete_messageSingle: "\"{name}\"을(를) 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+  confirmDelete_messageMultiple: "{count}개 파일을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+  confirmDelete_cancel: "취소",
+  confirmDelete_delete: "삭제",
   update_title: "yt-dlp 업데이트 가능",
   update_desc: "새 버전의 yt-dlp가 있습니다. 최신 상태를 유지하면 오류를 방지할 수 있습니다.",
   update_current: "현재 버전:",
@@ -996,6 +1116,12 @@ const ko: Translations = {
   settings_checkForUpdates: "업데이트 확인",
   settings_checking: "확인 중…",
   settings_checkFailed: "업데이트를 확인할 수 없습니다",
+
+  // Settings — about section
+  settings_about: "정보",
+  settings_aboutVersion: "버전",
+  settings_aboutRepo: "GitHub 저장소",
+  settings_aboutCreatedBy: "T3tracon 제작",
 
   progress_connecting: "연결 중…",
   progress_processing: "처리 중",
@@ -1076,6 +1202,14 @@ const zh: Translations = {
   common_clear: "清除",
   common_close: "关闭",
   common_save: "保存",
+
+  // ConfirmDialog — video deletion
+  confirmDelete_titleSingle: "删除文件?",
+  confirmDelete_titleMultiple: "删除 {count} 个文件?",
+  confirmDelete_messageSingle: "确定要永久删除 \"{name}\" 吗?此操作无法撤销。",
+  confirmDelete_messageMultiple: "确定要永久删除 {count} 个文件吗?此操作无法撤销。",
+  confirmDelete_cancel: "取消",
+  confirmDelete_delete: "删除",
   update_title: "yt-dlp 有可用更新",
   update_desc: "yt-dlp 有新版本可用。保持最新版本有助于避免下载错误。",
   update_current: "当前版本：",
@@ -1101,6 +1235,12 @@ const zh: Translations = {
   settings_checkForUpdates: "检查更新",
   settings_checking: "检查中…",
   settings_checkFailed: "无法检查更新",
+
+  // Settings — about section
+  settings_about: "关于",
+  settings_aboutVersion: "版本",
+  settings_aboutRepo: "GitHub 仓库",
+  settings_aboutCreatedBy: "由 T3tracon 创建",
 
   progress_connecting: "连接中…",
   progress_processing: "处理中",

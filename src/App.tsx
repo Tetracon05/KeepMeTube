@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "./hooks/useTheme";
 import { useDownloadStore } from "./store/useDownloadStore";
+import { useMacMenuEvents } from "./hooks/useMacMenuEvents";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { TopBar } from "./components/TopBar";
 import { DownloadList } from "./components/DownloadList";
@@ -11,6 +12,8 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { AppUpdateDialog } from "./components/AppUpdateDialog";
 import { UpdateBanner } from "./components/UpdateBanner";
+import { AboutDialog } from "./components/AboutDialog";
+import { CheckForUpdatesDialog } from "./components/CheckForUpdatesDialog";
 import { getSavedLanguage, initLanguage } from "./lib/i18n";
 import * as api from "./lib/tauri";
 import type { UpdateCheckResult, AppUpdateInfo } from "./types";
@@ -22,6 +25,8 @@ function App() {
   const { mode, setMode } = useTheme();
   const { loadDownloads, initEventListeners } = useDownloadStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
+  const [checkUpdatesDialogOpen, setCheckUpdatesDialogOpen] = useState(false);
 
   // Language selection: show if no language saved yet
   const [languageSelected, setLanguageSelected] = useState<boolean>(() => {
@@ -78,6 +83,26 @@ function App() {
     runUpdateChecks();
   }, [languageSelected]);
 
+  const triggerAppUpdate = () => {
+    setSettingsOpen(false);
+    setCheckUpdatesDialogOpen(false);
+    setAppUpdateModalOpen(true);
+  };
+
+  const triggerYtDlpUpdate = () => {
+    setSettingsOpen(false);
+    setCheckUpdatesDialogOpen(false);
+    setYtDlpUpdateModalOpen(true);
+  };
+
+  // Native macOS app/File menu bridge — a no-op on Windows/Linux, where the
+  // Rust side never builds a custom menu or emits these events.
+  useMacMenuEvents({
+    onAbout: () => setAboutDialogOpen(true),
+    onSettings: () => setSettingsOpen(true),
+    onCheckUpdates: () => setCheckUpdatesDialogOpen(true),
+  });
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Language selection (first launch only) — only gate in the entire app
@@ -100,16 +125,27 @@ function App() {
         onSetTheme={setMode}
         pendingAppUpdate={pendingAppUpdate}
         pendingYtDlpUpdate={pendingYtDlpUpdate}
-        onTriggerAppUpdate={() => {
-          setSettingsOpen(false);
-          setAppUpdateModalOpen(true);
-        }}
-        onTriggerYtDlpUpdate={() => {
-          setSettingsOpen(false);
-          setYtDlpUpdateModalOpen(true);
-        }}
+        onTriggerAppUpdate={triggerAppUpdate}
+        onTriggerYtDlpUpdate={triggerYtDlpUpdate}
         onCheckUpdates={runUpdateChecks}
       />
+
+      {/* macOS app menu: About */}
+      {aboutDialogOpen && (
+        <AboutDialog onClose={() => setAboutDialogOpen(false)} />
+      )}
+
+      {/* macOS app menu: Check for Updates */}
+      {checkUpdatesDialogOpen && (
+        <CheckForUpdatesDialog
+          onClose={() => setCheckUpdatesDialogOpen(false)}
+          pendingAppUpdate={pendingAppUpdate}
+          pendingYtDlpUpdate={pendingYtDlpUpdate}
+          onTriggerAppUpdate={triggerAppUpdate}
+          onTriggerYtDlpUpdate={triggerYtDlpUpdate}
+          onCheckUpdates={runUpdateChecks}
+        />
+      )}
 
       {/* App self-update modal */}
       {appUpdateModalOpen && pendingAppUpdate && (

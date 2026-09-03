@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getVersion } from "@tauri-apps/api/app";
 import type {
   AnalysisResult,
   AppUpdateInfo,
@@ -6,6 +7,12 @@ import type {
   DownloadEntry,
   UpdateCheckResult,
 } from "../types";
+
+// ===== App Metadata =====
+
+export async function getAppVersion(): Promise<string> {
+  return getVersion();
+}
 
 // ===== Dependency Commands =====
 

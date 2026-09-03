@@ -1,18 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useLanguage } from "../hooks/useLanguage";
 import { LANGUAGES, LangCode, setLanguage } from "../lib/i18n";
+import * as api from "../lib/tauri";
 import type { AppUpdateInfo, UpdateCheckResult } from "../types";
 import {
   IconShield,
   IconPalette,
   IconGlobe,
-  IconRefreshCw,
+  IconInfo,
   IconSun,
   IconMonitor,
   IconMoon,
   IconCheckCircle,
 } from "./Icons";
+import { UpdateCheckControls } from "./UpdateCheckControls";
+
+const GITHUB_REPO_URL = "https://github.com/Tetracon05/YT-Downloader";
 
 type ThemeMode = "system" | "light" | "dark";
 
@@ -50,10 +54,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     () => localStorage.getItem("yt-cookies-file") || ""
   );
 
-  // Update check button local states
-  const [checking, setChecking] = useState(false);
-  const [checkedOnce, setCheckedOnce] = useState(false);
-  const [checkError, setCheckError] = useState(false);
+  const [appVersion, setAppVersion] = useState("");
+  useEffect(() => {
+    api.getAppVersion().then(setAppVersion).catch((e) => console.error("Failed to get app version:", e));
+  }, []);
 
   const cookiesFileName = cookiesFile
     ? cookiesFile.split(/[/\\]/).pop() || cookiesFile
@@ -87,26 +91,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     setLanguage(code);
   };
 
-  const handleCheckUpdates = async () => {
-    setChecking(true);
-    // Clear the stale result badge from a previous check so it doesn't
-    // render alongside the new checking spinner while this one is in flight.
-    setCheckedOnce(false);
-    setCheckError(false);
-    const { appError, ytError } = await onCheckUpdates();
-    // A failed check must never be reported as "up to date" — that's a
-    // false positive. Surface it as a distinct error state instead.
-    setCheckError(appError || ytError);
-    setCheckedOnce(true);
-    setChecking(false);
-  };
-
   if (!isOpen) return null;
-
-  // Derived update button state
-  const hasAppUpdate = pendingAppUpdate !== null;
-  const hasYtDlpUpdate = pendingYtDlpUpdate !== null;
-  const hasAnyUpdate = hasAppUpdate || hasYtDlpUpdate;
 
   return (
     <>
@@ -227,84 +212,33 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
           <div className="settings-divider" />
 
-          {/* ── Section: Updates ──────────────────── */}
+          {/* ── Section: About ────────────────────── */}
           <section className="settings-section">
-            <h3 className="settings-section__title"><IconRefreshCw size={16} /> {t("settings_updates")}</h3>
+            <h3 className="settings-section__title"><IconInfo size={16} /> {t("settings_about")}</h3>
 
-            <div className="settings-updates-row">
-              {/* App update button */}
-              {hasAppUpdate ? (
-                <div className="settings-update-item">
-                  <div className="settings-update-badge">
-                    <span className="settings-update-badge__dot" />
-                    {t("settings_appUpdateAvailable")} — <strong>v{pendingAppUpdate!.version}</strong>
-                  </div>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={onTriggerAppUpdate}
-                  >
-                    {t("settings_updateAppBtn")}
-                  </button>
-                </div>
-              ) : (
-                /* yt-dlp update button — shown when only yt-dlp has an update */
-                hasYtDlpUpdate ? (
-                  <div className="settings-update-item">
-                    <div className="settings-update-badge">
-                      <span className="settings-update-badge__dot" />
-                      {t("settings_ytdlpUpdateAvailable")} — <strong>{pendingYtDlpUpdate!.latest_version}</strong>
-                    </div>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={onTriggerYtDlpUpdate}
-                    >
-                      {t("settings_updateYtdlpBtn")}
-                    </button>
-                  </div>
-                ) : (
-                  /* Idle: no pending updates. The button's label is always
-                     static — the in-progress/result state is shown as a
-                     separate status badge to its left (same pattern as the
-                     pending-update rows above), so the button itself never
-                     swaps content and can't glitch on re-layout. */
-                  <div className="settings-update-item settings-update-item--idle">
-                    {checking ? (
-                      <div className="settings-update-badge">
-                        <div className="spinner spinner-small" />
-                        {t("settings_checking")}
-                      </div>
-                    ) : checkedOnce && checkError ? (
-                      <span className="settings-update-error">{t("settings_checkFailed")}</span>
-                    ) : checkedOnce && !hasAnyUpdate ? (
-                      <span className="settings-update-uptodate">{t("settings_upToDate")}</span>
-                    ) : null}
-                    <button
-                      className="btn btn-secondary btn-sm settings-update-check-btn"
-                      onClick={handleCheckUpdates}
-                      disabled={checking}
-                    >
-                      {t("settings_checkForUpdates")}
-                    </button>
-                  </div>
-                )
-              )}
-
-              {/* Also show yt-dlp button when both updates are pending */}
-              {hasAppUpdate && hasYtDlpUpdate && (
-                <div className="settings-update-item">
-                  <div className="settings-update-badge">
-                    <span className="settings-update-badge__dot" />
-                    {t("settings_ytdlpUpdateAvailable")} — <strong>{pendingYtDlpUpdate!.latest_version}</strong>
-                  </div>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={onTriggerYtDlpUpdate}
-                  >
-                    {t("settings_updateYtdlpBtn")}
-                  </button>
-                </div>
-              )}
+            <div className="settings-about-info">
+              <span className="settings-about-version">
+                {t("settings_aboutVersion")} {appVersion && `v${appVersion}`}
+              </span>
+              <span className="settings-about-author">{t("settings_aboutCreatedBy")}</span>
             </div>
+
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="settings-link"
+            >
+              {t("settings_aboutRepo")} ↗
+            </a>
+
+            <UpdateCheckControls
+              pendingAppUpdate={pendingAppUpdate}
+              pendingYtDlpUpdate={pendingYtDlpUpdate}
+              onTriggerAppUpdate={onTriggerAppUpdate}
+              onTriggerYtDlpUpdate={onTriggerYtDlpUpdate}
+              onCheckUpdates={onCheckUpdates}
+            />
           </section>
 
         </div>

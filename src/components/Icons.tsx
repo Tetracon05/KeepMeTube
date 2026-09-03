@@ -149,3 +149,7 @@ export const IconGlobe: React.FC<IconProps> = (p) => (
 export const IconRefreshCw: React.FC<IconProps> = (p) => (
   <Icon {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></Icon>
 );
+
+export const IconInfo: React.FC<IconProps> = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></Icon>
+);

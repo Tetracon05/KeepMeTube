@@ -1,5 +1,7 @@
 mod binary_resolver;
 mod commands;
+#[cfg(target_os = "macos")]
+mod menu;
 mod state;
 mod store;
 
@@ -22,13 +24,20 @@ pub fn run() {
         }
     }
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_drag::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build());
+
+    // Native app/File/Edit menu bar — macOS only, leaves Windows/Linux
+    // (which have no menu bar in this app) untouched.
+    #[cfg(target_os = "macos")]
+    let builder = builder.menu(menu::build).on_menu_event(menu::handle_event);
+
+    builder
         .setup(|app| {
             // Determine app data directory for persistence
             let data_dir = app
