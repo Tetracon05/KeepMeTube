@@ -95,8 +95,9 @@ jobs:
             - **Windows**: Run the `.msi` or `.exe` installer.
             - **Linux**: Run the `.AppImage` file.
           releaseDraft: false
-          # Marked as beta while the update system and other core-feature
-          # regressions are being verified. Flip back to false once the
-          # project returns to a stable versioning track.
-          prerelease: true
+          # Not flagged as a GitHub prerelease even during the beta track:
+          # the in-app updater's endpoint is releases/latest/download/,
+          # which GitHub resolves only to the newest non-prerelease release.
+          # "Beta" status is communicated via the release title/notes instead.
+          prerelease: false
           args: ${{ matrix.args }}
