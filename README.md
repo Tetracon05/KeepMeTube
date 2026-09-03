@@ -27,7 +27,7 @@ The warning is misleading. The app isn't actually damaged. macOS is simply being
 Copy and paste this command into Terminal, then press Enter:
 
 
-'''xattr -d com.apple.quarantine "/Applications/YT Downloader.app"'''
+`xattr -d com.apple.quarantine "/Applications/YT Downloader.app"`
 This command tells macOS to remove the quarantine flag from the app. After running it once, you'll be able to open YT Downloader normally without any warnings.
 
 **Is It Safe?**
