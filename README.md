@@ -14,6 +14,33 @@ Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp) and built with [Tauri v2](
 # Download
 👉 **[Get Latest Release (macOS, Windows, Linux)](https://github.com/Tetracon05/YT-Downloader/releases)**
 
+**Note for macOS
+How to Fix "Damaged Application" Warning
+When you first download YT Downloader, macOS may show a "YT Downloader is damaged and can't be opened" warning, even though the application is perfectly fine.
+
+Why This Happens
+macOS automatically marks files downloaded from the internet with a "quarantine" attribute for security. This is a safety feature—it helps prevent accidentally running malicious software. However, since YT Downloader is not yet notarized by Apple (a process that requires Apple Developer Program membership), macOS treats it as potentially untrusted and refuses to open it.
+
+The warning is misleading. The app isn't actually damaged. macOS is simply being cautious about an unsigned application.
+
+How to Fix It
+Copy and paste this command into Terminal, then press Enter:
+
+
+xattr -d com.apple.quarantine "/Applications/YT Downloader.app"
+This command tells macOS to remove the quarantine flag from the app. After running it once, you'll be able to open YT Downloader normally without any warnings.
+
+Is It Safe?
+Yes. You're telling your Mac to trust this specific application. The command only removes the quarantine mark—it doesn't modify the app itself or bypass any other security features. Your system will still protect you from other potentially harmful software.
+
+Alternative: Right-Click to Open
+If you prefer not to use Terminal, you can also:
+
+Right-click the YT Downloader app in Finder
+Select "Open"
+Click "Open" in the warning dialog
+This bypasses the warning once, but you'll see it again next time you launch the app. Using the Terminal command is a permanent fix.
+
 ---
 
 ## 🌐 Supported Sites
