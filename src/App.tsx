@@ -23,7 +23,14 @@ initLanguage();
 
 function App() {
   const { mode, setMode } = useTheme();
-  const { loadDownloads, initEventListeners } = useDownloadStore();
+  // Individual selectors, not a bare `useDownloadStore()`: these two are
+  // stable action references, so selecting them precisely means this
+  // top-of-tree component never re-renders for store changes (including
+  // every download-progress tick) — a bare call would re-render on all of
+  // them and cascade through the whole app, since nothing below is memoized
+  // against App re-rendering except DownloadRow.
+  const loadDownloads = useDownloadStore((s) => s.loadDownloads);
+  const initEventListeners = useDownloadStore((s) => s.initEventListeners);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
   const [checkUpdatesDialogOpen, setCheckUpdatesDialogOpen] = useState(false);

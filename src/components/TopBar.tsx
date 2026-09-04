@@ -6,6 +6,7 @@ import {
   IconX,
   IconTrash,
   IconCheckSquare,
+  IconLogo,
 } from "./Icons";
 import { useLanguage } from "../hooks/useLanguage";
 import { useDownloadActions } from "../hooks/useDownloadActions";
@@ -32,6 +33,15 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSettings }) => {
 
   return (
     <div className="top-bar">
+      <div className="brand">
+        <div className="logo-mark">
+          <IconLogo size={16} />
+        </div>
+        <span className="brand-wordmark">KeepMeTube</span>
+      </div>
+
+      <div className="top-bar-divider" />
+
       <button
         className="btn btn-primary btn-add-download"
         onClick={() => setAddPanelOpen(true)}

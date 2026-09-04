@@ -1,10 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useDownloadStore } from "../store/useDownloadStore";
 import { DownloadRow } from "./DownloadRow";
 import { useContextMenu } from "../hooks/useContextMenu";
 import { useDownloadListShortcuts } from "../hooks/useDownloadListShortcuts";
 import { ContextMenu } from "./ContextMenu";
-import { IconDownload, IconChevronUp, IconChevronDown } from "./Icons";
+import { IconLogo, IconChevronUp, IconChevronDown } from "./Icons";
 import { useLanguage } from "../hooks/useLanguage";
 import type { DownloadEntry, SortKey } from "../types";
 
@@ -62,18 +63,37 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({
 };
 
 export const DownloadList: React.FC = () => {
+  // Scoped to exactly the fields this component uses — without this, any
+  // unrelated store change (opening Settings, a rename dialog, etc.) would
+  // re-render the whole table too, since the default `useDownloadStore()`
+  // subscribes to every field regardless of which ones are destructured.
   const { downloads, selectedIds, selectId, isMultiSelectMode, sortKey, sortDirection, toggleSort } =
-    useDownloadStore();
+    useDownloadStore(
+      useShallow((s) => ({
+        downloads: s.downloads,
+        selectedIds: s.selectedIds,
+        selectId: s.selectId,
+        isMultiSelectMode: s.isMultiSelectMode,
+        sortKey: s.sortKey,
+        sortDirection: s.sortDirection,
+        toggleSort: s.toggleSort,
+      }))
+    );
   const { contextMenu, handleContextMenu, closeContextMenu } =
     useContextMenu();
   const { t } = useLanguage();
 
   useDownloadListShortcuts();
 
-  const handleSelect = (id: string, e: React.MouseEvent) => {
-    const multiKey = e.metaKey || e.ctrlKey || isMultiSelectMode;
-    selectId(id, multiKey);
-  };
+  // Stable reference so DownloadRow's React.memo can actually skip
+  // re-rendering rows a progress tick didn't touch.
+  const handleSelect = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      const multiKey = e.metaKey || e.ctrlKey || isMultiSelectMode;
+      selectId(id, multiKey);
+    },
+    [isMultiSelectMode, selectId]
+  );
 
   const sortedDownloads = useMemo(() => {
     if (!sortKey) return downloads;
@@ -87,7 +107,7 @@ export const DownloadList: React.FC = () => {
       {downloads.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">
-            <IconDownload size={48} />
+            <IconLogo size={28} />
           </div>
           <h3 className="empty-title">{t("empty_title")}</h3>
           <p className="empty-description">

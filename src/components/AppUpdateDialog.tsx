@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as api from "../lib/tauri";
 import { useLanguage } from "../hooks/useLanguage";
+import { renderMarkdown } from "../lib/markdown";
 import type { AppUpdateInfo } from "../types";
 
 interface AppUpdateDialogProps {
@@ -15,6 +16,11 @@ export const AppUpdateDialog: React.FC<AppUpdateDialogProps> = ({
   const { t } = useLanguage();
   const [installing, setInstalling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentVersion, setCurrentVersion] = useState("");
+
+  useEffect(() => {
+    api.getAppVersion().then(setCurrentVersion).catch((e) => console.error("Failed to get app version:", e));
+  }, []);
 
   const handleInstall = async () => {
     setInstalling(true);
@@ -42,7 +48,7 @@ export const AppUpdateDialog: React.FC<AppUpdateDialogProps> = ({
           <div className="update-version-row">
             <span className="update-version-label">{t("update_current")}</span>
             <span className="update-version-value update-version-value--old">
-              v{/* current version comes from Tauri's package.version */}
+              {currentVersion && `v${currentVersion}`}
             </span>
           </div>
           <div className="update-version-arrow">↓</div>
@@ -57,7 +63,7 @@ export const AppUpdateDialog: React.FC<AppUpdateDialogProps> = ({
         {/* Release notes */}
         {updateInfo.notes && (
           <div className="update-notes">
-            <p className="update-notes__content">{updateInfo.notes}</p>
+            {renderMarkdown(updateInfo.notes)}
           </div>
         )}
 

@@ -33,13 +33,17 @@ const KindIcon: React.FC<{ kind: string }> = ({ kind }) => {
   }
 };
 
-export const DownloadRow: React.FC<DownloadRowProps> = ({
+// Memoized so a progress tick on one row (which replaces the whole
+// `downloads` array in the store) doesn't re-render every other row —
+// only the row whose own `download` object actually changed re-renders.
+// Requires `onSelect`/`onContextMenu` to be stable (see DownloadList).
+export const DownloadRow: React.FC<DownloadRowProps> = React.memo(function DownloadRow({
   download,
   isSelected,
   isMultiSelectMode,
   onSelect,
   onContextMenu,
-}) => {
+}) {
   const { lang } = useLanguage();
   const isDraggable = download.status === "completed" && !!download.file_path;
   const [isDragging, setIsDragging] = useState(false);
@@ -145,4 +149,4 @@ export const DownloadRow: React.FC<DownloadRowProps> = ({
       </td>
     </tr>
   );
-};
+});

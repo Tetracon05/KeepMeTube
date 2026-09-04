@@ -69,7 +69,7 @@ async fn fetch_latest_yt_dlp_version() -> Result<String, String> {
     let url = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
 
     let mut cmd = Command::new("curl");
-    cmd.args(["-s", "-A", "yt-downloader-app/1.0", url]);
+    cmd.args(["-s", "-A", "keepmetube-app/1.0", url]);
 
     #[cfg(target_os = "windows")]
     {

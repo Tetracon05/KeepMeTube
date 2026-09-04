@@ -23,9 +23,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onClose,
 }) => {
   const { t } = useLanguage();
-  const { downloads, removeDownloadsFromList, setRenameDialogId, setConfirmDeleteIds } =
-    useDownloadStore();
-  const download = downloads.find((d) => d.id === downloadId);
+  const removeDownloadsFromList = useDownloadStore((s) => s.removeDownloadsFromList);
+  const setRenameDialogId = useDownloadStore((s) => s.setRenameDialogId);
+  const setConfirmDeleteIds = useDownloadStore((s) => s.setConfirmDeleteIds);
+  const download = useDownloadStore((s) => s.downloads.find((d) => d.id === downloadId));
 
   if (!download) return null;
 

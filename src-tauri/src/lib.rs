@@ -46,7 +46,7 @@ pub fn run() {
                 .map(|p| p.to_string_lossy().to_string())
                 .unwrap_or_else(|_| {
                     dirs::data_dir()
-                        .map(|p| p.join("yt-downloader").to_string_lossy().to_string())
+                        .map(|p| p.join("keepmetube").to_string_lossy().to_string())
                         .unwrap_or_else(|| ".".to_string())
                 });
 

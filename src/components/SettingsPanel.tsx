@@ -16,7 +16,7 @@ import {
 } from "./Icons";
 import { UpdateCheckControls } from "./UpdateCheckControls";
 
-const GITHUB_REPO_URL = "https://github.com/Tetracon05/YT-Downloader";
+const GITHUB_REPO_URL = "https://github.com/Tetracon05/KeepMeTube";
 
 type ThemeMode = "system" | "light" | "dark";
 

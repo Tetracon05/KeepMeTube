@@ -10,8 +10,14 @@ import type {
 
 // ===== App Metadata =====
 
+// The version never changes for the lifetime of the process, but three
+// separate components (Settings, About, the update dialog) each ask for it
+// on mount — cache the one real IPC call instead of round-tripping three times.
+let cachedVersion: Promise<string> | null = null;
+
 export async function getAppVersion(): Promise<string> {
-  return getVersion();
+  if (!cachedVersion) cachedVersion = getVersion();
+  return cachedVersion;
 }
 
 // ===== Dependency Commands =====

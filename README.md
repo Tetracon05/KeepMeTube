@@ -1,4 +1,4 @@
-# YT Downloader
+# KeepMeTube
 
 A modern, fast, and cross-platform desktop application for downloading videos and audio from **YouTube, Instagram, Twitch, TikTok, Twitter/X, Reddit, Facebook, Vimeo, SoundCloud, and [1800+ other websites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)**.
 
@@ -12,13 +12,13 @@ Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp) and built with [Tauri v2](
 
 
 # Download
-👉 **[Get Latest Release (macOS, Windows, Linux)](https://github.com/Tetracon05/YT-Downloader/releases)**
+👉 **[Get Latest Release (macOS, Windows, Linux)](https://github.com/Tetracon05/KeepMeTube/releases)**
 
 ---
 
 ## 🌐 Supported Sites
 
-Although named **YT Downloader**, the application leverages yt-dlp's universal extractor engine and supports **over 1,800 websites and platforms**, including:
+Although named **KeepMeTube**, the application leverages yt-dlp's universal extractor engine and supports **over 1,800 websites and platforms**, including:
 
 | Platform | Supported Content |
 | :--- | :--- |
@@ -68,8 +68,8 @@ Although named **YT Downloader**, the application leverages yt-dlp's universal e
 3. **Export Cookies:**
    - Click the extension icon and select **Export** / **Download**.
    - Save the file as `cookies.txt` on your computer.
-4. **Select in YT Downloader:**
-   - Open YT Downloader and click **Settings (⚙️)** or use the banner inside the **Add Download** modal.
+4. **Select in KeepMeTube:**
+   - Open KeepMeTube and click **Settings (⚙️)** or use the banner inside the **Add Download** modal.
    - Click **"Select cookies.txt"** and choose your file.
    - *The file path is saved automatically; you only need to select it once!*
 
@@ -138,9 +138,9 @@ This produces platform-specific installer bundles:
 
 | Platform | Output |
 | :--- | :--- |
-| **macOS** | `src-tauri/target/release/bundle/dmg/YT Downloader.dmg` |
-| **Windows** | `src-tauri/target/release/bundle/msi/YT Downloader.msi` |
-| **Linux** | `src-tauri/target/release/bundle/appimage/YT Downloader.AppImage` |
+| **macOS** | `src-tauri/target/release/bundle/dmg/KeepMeTube.dmg` |
+| **Windows** | `src-tauri/target/release/bundle/msi/KeepMeTube.msi` |
+| **Linux** | `src-tauri/target/release/bundle/appimage/KeepMeTube.AppImage` |
 
 ---
 

@@ -13,19 +13,24 @@ import * as api from "../lib/tauri";
  * selection — same approach as `useDownloadListShortcuts`.
  */
 export function useDownloadActions() {
-  const {
-    downloads,
-    selectedIds,
-    isMultiSelectMode,
-    setAddPanelOpen,
-    toggleMultiSelectMode,
-  } = useDownloadStore();
+  const selectedIds = useDownloadStore((s) => s.selectedIds);
+  const isMultiSelectMode = useDownloadStore((s) => s.isMultiSelectMode);
+  const setAddPanelOpen = useDownloadStore((s) => s.setAddPanelOpen);
+  const toggleMultiSelectMode = useDownloadStore((s) => s.toggleMultiSelectMode);
+
+  // Scoped to the one selected entry, not the whole `downloads` array:
+  // `updateProgress` replaces that array on every progress tick, but `.find`
+  // below returns the *same* object reference for every id it doesn't
+  // match. So this only produces a new value (and re-renders the toolbar /
+  // native menu bridge) when the actually-selected download changes, not
+  // when some other download in the list is merely progressing.
+  const singleSelected = useDownloadStore((s) => {
+    if (s.selectedIds.size !== 1) return null;
+    const id = s.selectedIds.values().next().value as string;
+    return s.downloads.find((d) => d.id === id) ?? null;
+  });
 
   const selectedArray = [...selectedIds];
-  const singleSelected =
-    selectedArray.length === 1
-      ? downloads.find((d) => d.id === selectedArray[0])
-      : null;
   const hasSelection = selectedArray.length > 0;
   const isCompleted = singleSelected?.status === "completed";
 

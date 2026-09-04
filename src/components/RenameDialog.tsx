@@ -3,12 +3,15 @@ import { useDownloadStore } from "../store/useDownloadStore";
 import * as api from "../lib/tauri";
 
 export const RenameDialog: React.FC = () => {
-  const { downloads, renameDialogId, setRenameDialogId, loadDownloads } =
-    useDownloadStore();
+  const renameDialogId = useDownloadStore((s) => s.renameDialogId);
+  const setRenameDialogId = useDownloadStore((s) => s.setRenameDialogId);
+  const loadDownloads = useDownloadStore((s) => s.loadDownloads);
+  // Derived selector instead of subscribing to the whole `downloads` array:
+  // a progress tick on some other download leaves this entry's object
+  // reference unchanged, so it doesn't re-render this (always-mounted) dialog.
+  const download = useDownloadStore((s) => s.downloads.find((d) => d.id === renameDialogId));
   const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const download = downloads.find((d) => d.id === renameDialogId);
 
   React.useEffect(() => {
     if (download) {

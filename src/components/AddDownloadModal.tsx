@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useDownloadStore } from "../store/useDownloadStore";
 import { VideoTab } from "./VideoTab";
 import { AudioTab } from "./AudioTab";
@@ -7,9 +8,20 @@ import { generateId, formatDuration } from "../lib/utils";
 import type { AnalysisResult, TabType } from "../types";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useLanguage } from "../hooks/useLanguage";
+import { IconCheckCircle } from "./Icons";
 
 export const AddDownloadModal: React.FC = () => {
-  const { isAddPanelOpen, setAddPanelOpen, loadDownloads } = useDownloadStore();
+  // This modal is always mounted (App.tsx renders it unconditionally) and
+  // holds a fair amount of its own state/effects — none of which depend on
+  // `downloads`, so scoping this subscription means it no longer re-runs
+  // on every download-progress tick while closed.
+  const { isAddPanelOpen, setAddPanelOpen, loadDownloads } = useDownloadStore(
+    useShallow((s) => ({
+      isAddPanelOpen: s.isAddPanelOpen,
+      setAddPanelOpen: s.setAddPanelOpen,
+      loadDownloads: s.loadDownloads,
+    }))
+  );
   const { t } = useLanguage();
 
   const [url, setUrl] = useState("");
@@ -194,7 +206,7 @@ export const AddDownloadModal: React.FC = () => {
           {/* Cookies banner — optional, non-intrusive */}
           {cookiesFile ? (
             <div className="cookies-banner cookies-banner--active">
-              <span className="cookies-banner__icon">C</span>
+              <span className="cookies-banner__icon"><IconCheckCircle size={15} /></span>
               <span className="cookies-banner__text"><strong>Cookies:</strong> {cookiesFileName}</span>
               <button className="cookies-banner__btn cookies-banner__btn--change" onClick={handleSelectCookiesFile}>{t("common_change")}</button>
               <button className="cookies-banner__btn cookies-banner__btn--clear" onClick={handleClearCookies}>X</button>

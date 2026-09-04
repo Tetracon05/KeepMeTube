@@ -1,4 +1,5 @@
 import React from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useDownloadStore } from "../store/useDownloadStore";
 import { useLanguage } from "../hooks/useLanguage";
 import { IconAlertTriangle } from "./Icons";
@@ -18,14 +19,22 @@ function renderWithEmphasis(template: string, placeholder: string, value: string
 }
 
 export const ConfirmDialog: React.FC = () => {
-  const { confirmDeleteIds, setConfirmDeleteIds, removeDownloadsFromList, downloads } =
-    useDownloadStore();
+  const confirmDeleteIds = useDownloadStore((s) => s.confirmDeleteIds);
+  const setConfirmDeleteIds = useDownloadStore((s) => s.setConfirmDeleteIds);
+  const removeDownloadsFromList = useDownloadStore((s) => s.removeDownloadsFromList);
+  // Derived + shallow-compared: only the handful of entries actually being
+  // confirmed for deletion, so an unrelated download's progress tick
+  // doesn't re-render this (always-mounted) dialog.
+  const items = useDownloadStore(
+    useShallow((s) =>
+      confirmDeleteIds ? s.downloads.filter((d) => confirmDeleteIds.includes(d.id)) : []
+    )
+  );
   const { t } = useLanguage();
 
   if (!confirmDeleteIds || confirmDeleteIds.length === 0) return null;
 
   const count = confirmDeleteIds.length;
-  const items = downloads.filter((d) => confirmDeleteIds.includes(d.id));
   const singleTitle = count === 1 ? items[0]?.title : null;
 
   const title = singleTitle

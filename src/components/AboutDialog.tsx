@@ -3,13 +3,13 @@ import { useLanguage } from "../hooks/useLanguage";
 import * as api from "../lib/tauri";
 import { IconInfo } from "./Icons";
 
-const GITHUB_REPO_URL = "https://github.com/Tetracon05/YT-Downloader";
+const GITHUB_REPO_URL = "https://github.com/Tetracon05/KeepMeTube";
 
 interface AboutDialogProps {
   onClose: () => void;
 }
 
-/** Opened from the macOS app menu's "About YT Downloader" item. */
+/** Opened from the macOS app menu's "About KeepMeTube" item. */
 export const AboutDialog: React.FC<AboutDialogProps> = ({ onClose }) => {
   const { t } = useLanguage();
   const [appVersion, setAppVersion] = useState("");
@@ -31,7 +31,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({ onClose }) => {
             <IconInfo size={28} className="confirm-icon" />
           </div>
           <p className="confirm-message">
-            YT Downloader {appVersion && `v${appVersion}`}
+            KeepMeTube {appVersion && `v${appVersion}`}
             <br />
             {t("settings_aboutCreatedBy")}
           </p>

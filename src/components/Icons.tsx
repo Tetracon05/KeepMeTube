@@ -153,3 +153,25 @@ export const IconRefreshCw: React.FC<IconProps> = (p) => (
 export const IconInfo: React.FC<IconProps> = (p) => (
   <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></Icon>
 );
+
+/**
+ * The KeepMeTube mark — a double chevron. Reads as both "rewind" and "pull
+ * down": a generic download motion rather than a play button, so it stays
+ * neutral across 1800+ source sites instead of evoking any one platform.
+ * Doesn't use the shared `Icon` wrapper — its stroke weight/caps/joins are
+ * a fixed brand spec (see rewind-media-downloader-logo/), not the generic
+ * UI icon-set style.
+ */
+export const IconLogo: React.FC<IconProps> = ({ size = 16, className = "" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    className={className}
+  >
+    <path d="M8 14 L24 28 L40 14" stroke="currentColor" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter"/>
+    <path d="M8 24 L24 38 L40 24" stroke="currentColor" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter"/>
+  </svg>
+);

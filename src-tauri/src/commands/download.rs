@@ -1,9 +1,18 @@
 use crate::state::{AppState, DownloadEntry, DownloadKind, DownloadStatus, ProgressEvent};
 use crate::store;
 use std::process::Stdio;
+use std::time::{Duration, Instant};
 use tauri::{Emitter, State, AppHandle};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
+
+/// Minimum time between full downloads.json rewrites while a download is
+/// actively streaming progress. yt-dlp's `--newline` progress lines can
+/// arrive many times a second; writing the whole (serialized) downloads
+/// list to disk on every one of them is wasted I/O for a number the user
+/// only glances at. Status transitions (queued/processing/completed/
+/// failed/cancelled) always persist immediately regardless of this.
+const PROGRESS_SAVE_INTERVAL: Duration = Duration::from_secs(2);
 
 /// Start a new download
 #[tauri::command]
@@ -184,6 +193,9 @@ async fn spawn_download(
     tokio::spawn(async move {
         let mut reader = BufReader::new(stdout).lines();
         let mut is_processing = false;
+        // Far enough in the past that the very first progress line still saves
+        // immediately, so early progress isn't invisible to a restart.
+        let mut last_progress_save = Instant::now() - PROGRESS_SAVE_INTERVAL;
 
         while let Ok(Some(line)) = reader.next_line().await {
             let trimmed = line.trim().to_string();
@@ -222,6 +234,9 @@ async fn spawn_download(
 
                     if let Ok(pct) = percent_str.parse::<f64>() {
                         if !is_processing {
+                            // Always emit — the frontend needs every tick for a
+                            // smooth progress bar, and this is just an in-memory
+                            // event, not disk I/O.
                             app_for_progress.emit("download-progress", ProgressEvent {
                                 id: id_for_progress.clone(),
                                 status: DownloadStatus::Downloading,
@@ -236,8 +251,14 @@ async fn spawn_download(
                                 dl.progress = pct;
                                 dl.speed = speed_str;
                             }
-                            let dd = data_dir_for_progress.lock().await;
-                            store::save_downloads(&dd, &dls);
+                            // But only rewrite downloads.json a few times a
+                            // second — the in-memory state above is already
+                            // current, and that's what get_downloads() reads.
+                            if last_progress_save.elapsed() >= PROGRESS_SAVE_INTERVAL {
+                                let dd = data_dir_for_progress.lock().await;
+                                store::save_downloads(&dd, &dls);
+                                last_progress_save = Instant::now();
+                            }
                         }
                     }
                 }
@@ -288,6 +309,20 @@ async fn spawn_download(
             None
         };
 
+        // Compute file size on completion before taking the downloads lock —
+        // tokio::fs keeps this off the async runtime's worker thread, unlike
+        // std::fs which would block it for the duration of the syscall.
+        let file_path_for_size = if success {
+            let downloads = state_downloads.lock().await;
+            downloads.iter().find(|d| d.id == id_clone).map(|d| d.file_path.clone())
+        } else {
+            None
+        };
+        let computed_size_from_disk = match &file_path_for_size {
+            Some(path) => tokio::fs::metadata(path).await.ok().map(|m| m.len()),
+            None => None,
+        };
+
         // Update stored entry
         let mut computed_file_size: Option<u64> = None;
         {
@@ -297,11 +332,8 @@ async fn spawn_download(
                 dl.progress = if success { 100.0 } else { dl.progress };
                 dl.speed = String::new();
                 dl.error = error_msg.clone();
-                // Compute file size on completion
-                if success {
-                    if let Ok(meta) = std::fs::metadata(&dl.file_path) {
-                        dl.file_size = Some(meta.len());
-                    }
+                if let Some(size) = computed_size_from_disk {
+                    dl.file_size = Some(size);
                 }
                 computed_file_size = dl.file_size;
             }

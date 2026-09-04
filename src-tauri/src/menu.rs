@@ -1,4 +1,4 @@
-//! Native macOS menu bar: an app menu ("YT Downloader"), a "File" menu, and
+//! Native macOS menu bar: an app menu ("KeepMeTube"), a "File" menu, and
 //! a standard "Edit" menu. This module is only compiled on macOS (see the
 //! `#[cfg(target_os = "macos")]` on its `mod menu;` declaration in lib.rs) —
 //! Windows and Linux keep their existing (menu-less) behavior untouched.
@@ -13,14 +13,14 @@ use tauri::menu::{Menu, MenuBuilder, MenuEvent, MenuItemBuilder, SubmenuBuilder}
 use tauri::{AppHandle, Emitter, Wry};
 
 pub fn build(app: &AppHandle<Wry>) -> tauri::Result<Menu<Wry>> {
-    let about = MenuItemBuilder::with_id("menu-about", "About YT Downloader").build(app)?;
+    let about = MenuItemBuilder::with_id("menu-about", "About KeepMeTube").build(app)?;
     let settings = MenuItemBuilder::with_id("menu-settings", "Settings...")
         .accelerator("Cmd+,")
         .build(app)?;
     let check_updates =
         MenuItemBuilder::with_id("menu-check-updates", "Check for Updates...").build(app)?;
 
-    let app_menu = SubmenuBuilder::new(app, "YT Downloader")
+    let app_menu = SubmenuBuilder::new(app, "KeepMeTube")
         .item(&about)
         .separator()
         .item(&settings)
