@@ -7,7 +7,8 @@ export type DownloadStatus =
   | "processing"
   | "completed"
   | "failed"
-  | "cancelled";
+  | "cancelled"
+  | "paused";
 
 export type DownloadKind = "video" | "audio" | "videoaudio";
 
@@ -24,6 +25,10 @@ export interface DownloadEntry {
   error: string | null;
   created_at: string;
   format_args: string[];
+  /** Shared id for entries queued from the same playlist download; null for a standalone download. */
+  playlist_id: string | null;
+  /** The playlist's display title, present on every one of its entries. */
+  playlist_title: string | null;
 }
 
 export interface ProgressEvent {
@@ -62,6 +67,22 @@ export interface AnalysisResult {
   video_formats: VideoFormat[];
   audio_formats: VideoFormat[];
   combined_formats: VideoFormat[];
+}
+
+// ===== Playlist Types =====
+
+export interface PlaylistEntry {
+  id: string;
+  index: number;
+  title: string;
+  url: string;
+  duration: number | null;
+}
+
+export interface PlaylistAnalysisResult {
+  title: string;
+  uploader: string | null;
+  entries: PlaylistEntry[];
 }
 
 // ===== Dependency Types =====

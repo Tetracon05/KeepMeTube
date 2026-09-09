@@ -1,4 +1,4 @@
-use crate::state::{AnalysisResult, AppState, VideoFormat};
+use crate::state::{AnalysisResult, AppState, PlaylistAnalysisResult, PlaylistEntry, VideoFormat};
 use tokio::process::Command;
 use tauri::State;
 
@@ -208,6 +208,138 @@ pub async fn analyze_url(
         video_formats,
         audio_formats,
         combined_formats,
+    })
+}
+
+/// Enumerate a playlist's entries with a fast `--flat-playlist` probe.
+///
+/// This deliberately does not resolve per-video formats — for a playlist
+/// with dozens or hundreds of entries that would mean one full yt-dlp round
+/// trip per video. Instead it returns just enough metadata (id/title/
+/// duration) to show a picker; format selection for the actual downloads
+/// falls back to generic `height<=N` selectors applied per-video at
+/// download time (see `AddDownloadModal.tsx`), the same way single-video
+/// downloads already do when no exact format id is given.
+///
+/// Returns `Err("NOT_A_PLAYLIST")` when the URL doesn't actually resolve to
+/// a multi-entry playlist (e.g. a `list=` param pointing at a single-item
+/// list) — the frontend catches this and falls back to `analyze_url`.
+#[tauri::command]
+pub async fn analyze_playlist(
+    url: String,
+    cookies_file: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<PlaylistAnalysisResult, String> {
+    // Shares the single-slot abort plumbing with analyze_url — only one
+    // analysis (single-video or playlist) is ever in flight at a time.
+    abort_analysis_inner(&state).await;
+
+    let mut args: Vec<String> = vec![
+        "--flat-playlist".into(),
+        "--dump-single-json".into(),
+        "--no-warnings".into(),
+        "--encoding".into(),
+        "utf-8".into(),
+    ];
+
+    let has_cookies = cookies_file.as_deref().map(|p| !p.is_empty()).unwrap_or(false);
+    if has_cookies {
+        // Needed for private/unlisted playlists and the Watch Later/Liked
+        // lists, which only resolve for an authenticated request. No
+        // android-client override here (unlike analyze_url) — flat listing
+        // never touches the player/format APIs that flag affects.
+        args.push("--cookies".into());
+        args.push(cookies_file.unwrap());
+    }
+
+    args.push(url);
+
+    let mut cmd = Command::new(&state.yt_dlp_path);
+    cmd.args(&args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.env("PYTHONIOENCODING", "utf-8")
+           .env("PYTHONUTF8", "1")
+           .creation_flags(0x08000000);
+    }
+
+    let child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to start yt-dlp: {}", e))?;
+
+    {
+        let mut analyze_pid = state.analyze_process.lock().await;
+        *analyze_pid = Some(child.id().unwrap_or(0));
+    }
+
+    let output = child
+        .wait_with_output()
+        .await
+        .map_err(|e| format!("yt-dlp process error: {}", e))?;
+
+    {
+        let mut analyze_pid = state.analyze_process.lock().await;
+        *analyze_pid = None;
+    }
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Playlist analysis failed: {}", stderr.trim()));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: serde_json::Value =
+        serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse yt-dlp output: {}", e))?;
+
+    let entries_json = json["entries"].as_array().cloned().unwrap_or_default();
+    if json["_type"].as_str() != Some("playlist") || entries_json.is_empty() {
+        return Err("NOT_A_PLAYLIST".into());
+    }
+
+    let title = json["title"].as_str().unwrap_or("Playlist").to_string();
+    let uploader = json["uploader"]
+        .as_str()
+        .or_else(|| json["channel"].as_str())
+        .map(String::from);
+
+    let mut entries = Vec::with_capacity(entries_json.len());
+    for (i, e) in entries_json.iter().enumerate() {
+        let id = e["id"].as_str().unwrap_or_default().to_string();
+        if id.is_empty() {
+            continue;
+        }
+
+        // Flat entries sometimes carry a full webpage URL already, and
+        // sometimes just the bare video id, depending on the extractor and
+        // yt-dlp version — prefer the URL only when it's actually absolute.
+        let raw_url = e["url"].as_str().unwrap_or_default();
+        let entry_url = if raw_url.starts_with("http://") || raw_url.starts_with("https://") {
+            raw_url.to_string()
+        } else {
+            format!("https://www.youtube.com/watch?v={}", id)
+        };
+
+        entries.push(PlaylistEntry {
+            id,
+            index: (i + 1) as u32,
+            title: e["title"].as_str().unwrap_or("Unknown Title").to_string(),
+            url: entry_url,
+            duration: e["duration"].as_f64(),
+        });
+    }
+
+    if entries.is_empty() {
+        return Err("NOT_A_PLAYLIST".into());
+    }
+
+    Ok(PlaylistAnalysisResult {
+        title,
+        uploader,
+        entries,
     })
 }
 

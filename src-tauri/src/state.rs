@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -14,6 +15,13 @@ pub enum DownloadStatus {
     Completed,
     Failed,
     Cancelled,
+    /// No longer produced by anything (Pause/Resume was removed — YouTube's
+    /// direct media URLs expire and are IP-locked, so a killed download
+    /// usually can't actually resume from its partial file; Retry, a plain
+    /// restart, is what actually works). Kept only so a `downloads.json`
+    /// written while this existed still deserializes instead of losing the
+    /// user's whole history.
+    Paused,
 }
 
 /// Represents the type of download content
@@ -43,6 +51,18 @@ pub struct DownloadEntry {
     /// Stored so that resume can replay the exact same format selection.
     #[serde(default)]
     pub format_args: Vec<String>,
+    /// Shared id for every entry queued from the same playlist download —
+    /// absent for a standalone download. The frontend groups entries with
+    /// the same `playlist_id` into one collapsible row rather than a
+    /// separate persisted "playlist" record, so this and `playlist_title`
+    /// are the only backend representation of a playlist batch.
+    #[serde(default)]
+    pub playlist_id: Option<String>,
+    /// The playlist's display title, denormalized onto every one of its
+    /// entries so the frontend can render the group without a separate
+    /// lookup table.
+    #[serde(default)]
+    pub playlist_title: Option<String>,
 }
 
 /// Progress event emitted to the frontend during downloads
@@ -88,6 +108,26 @@ pub struct AnalysisResult {
     pub combined_formats: Vec<VideoFormat>,
 }
 
+/// A single entry within a playlist, from a fast `--flat-playlist` probe.
+/// Unlike `AnalysisResult`, this does not carry per-video formats — resolving
+/// those for every entry would mean one full yt-dlp round trip per video.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlaylistEntry {
+    pub id: String,
+    pub index: u32,
+    pub title: String,
+    pub url: String,
+    pub duration: Option<f64>,
+}
+
+/// Result of a flat playlist analysis sent to the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlaylistAnalysisResult {
+    pub title: String,
+    pub uploader: Option<String>,
+    pub entries: Vec<PlaylistEntry>,
+}
+
 /// Dependency check result
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DependencyStatus {
@@ -119,7 +159,10 @@ pub struct AppState {
     pub active_processes: Arc<Mutex<HashMap<String, tokio::process::Child>>>,
     pub analyze_process: Arc<Mutex<Option<u32>>>,
     pub data_dir: Arc<Mutex<String>>,
-    pub max_concurrent: usize,
+    /// User-configurable (Settings) concurrent-download limit. An atomic
+    /// rather than a plain `usize` so `set_max_concurrent` can update it
+    /// without needing a lock at every one of its (many) read sites.
+    pub max_concurrent: Arc<AtomicUsize>,
     /// Absolute path to the bundled yt-dlp binary (resolved at startup).
     pub yt_dlp_path: String,
     /// Absolute path to the bundled ffmpeg binary (resolved at startup).
@@ -132,13 +175,14 @@ impl AppState {
         initial_downloads: Vec<DownloadEntry>,
         yt_dlp_path: String,
         ffmpeg_path: String,
+        max_concurrent: usize,
     ) -> Self {
         Self {
             downloads: Arc::new(Mutex::new(initial_downloads)),
             active_processes: Arc::new(Mutex::new(HashMap::new())),
             analyze_process: Arc::new(Mutex::new(None)),
             data_dir: Arc::new(Mutex::new(data_dir)),
-            max_concurrent: 3,
+            max_concurrent: Arc::new(AtomicUsize::new(max_concurrent)),
             yt_dlp_path,
             ffmpeg_path,
         }

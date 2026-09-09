@@ -20,6 +20,10 @@ interface DownloadStore {
   confirmDeleteIds: string[] | null;
   sortKey: SortKey | null;
   sortDirection: SortDirection;
+  /** Id of the playlist currently drilled into, or null for the top-level list. */
+  openPlaylistId: string | null;
+  /** Filters the currently visible list (top-level or one playlist) by title. */
+  searchQuery: string;
 
   // Actions
   setDownloads: (downloads: DownloadEntry[]) => void;
@@ -29,6 +33,8 @@ interface DownloadStore {
   setMultiSelectMode: (on: boolean) => void;
   toggleMultiSelectMode: () => void;
   setAddPanelOpen: (open: boolean) => void;
+  setOpenPlaylistId: (id: string | null) => void;
+  setSearchQuery: (query: string) => void;
   setContextMenu: (
     ctx: { position: ContextMenuPosition; downloadId: string } | null
   ) => void;
@@ -51,8 +57,11 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
   contextMenu: null,
   renameDialogId: null,
   confirmDeleteIds: null,
-  sortKey: null,
-  sortDirection: "asc",
+  // Newest downloads first by default.
+  sortKey: "date",
+  sortDirection: "desc",
+  openPlaylistId: null,
+  searchQuery: "",
 
   // Setters
   setDownloads: (downloads) => set({ downloads }),
@@ -72,11 +81,19 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
     });
   },
 
+  // Scoped to whichever view is currently visible — the top-level list
+  // (standalone downloads only) or one playlist's entries — so Select All
+  // inside a playlist doesn't also grab unrelated top-level rows.
   selectAll: () =>
-    set((state) => ({
-      selectedIds: new Set(state.downloads.map((dl) => dl.id)),
-      isMultiSelectMode: true,
-    })),
+    set((state) => {
+      const visible = state.openPlaylistId
+        ? state.downloads.filter((dl) => dl.playlist_id === state.openPlaylistId)
+        : state.downloads.filter((dl) => !dl.playlist_id);
+      return {
+        selectedIds: new Set(visible.map((dl) => dl.id)),
+        isMultiSelectMode: true,
+      };
+    }),
 
   clearSelection: () => set({ selectedIds: new Set() }),
 
@@ -90,6 +107,12 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
     })),
 
   setAddPanelOpen: (open) => set({ isAddPanelOpen: open }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+
+  // Clears selection on navigation so a stale selection from one view
+  // doesn't silently apply to rows the user can no longer see.
+  setOpenPlaylistId: (id) =>
+    set({ openPlaylistId: id, selectedIds: new Set(), isMultiSelectMode: false }),
   setContextMenu: (ctx) => set({ contextMenu: ctx }),
   setRenameDialogId: (id) => set({ renameDialogId: id }),
   setConfirmDeleteIds: (ids) => set({ confirmDeleteIds: ids }),

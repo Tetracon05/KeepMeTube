@@ -13,8 +13,12 @@ import {
   IconMonitor,
   IconMoon,
   IconCheckCircle,
+  IconFolderOpen,
+  IconDownload,
+  IconFile,
 } from "./Icons";
 import { UpdateCheckControls } from "./UpdateCheckControls";
+import { DEFAULT_DOWNLOAD_DIR_KEY, FILENAME_TEMPLATE_KEY, DEFAULT_FILENAME_TEMPLATE } from "../lib/utils";
 
 const GITHUB_REPO_URL = "https://github.com/Tetracon05/KeepMeTube";
 
@@ -54,6 +58,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     () => localStorage.getItem("yt-cookies-file") || ""
   );
 
+  // Empty string means "use the OS default" — `systemDefaultDir` (fetched
+  // once, below) is what's actually shown/used until the user picks one.
+  const [downloadDir, setDownloadDir] = useState<string>(
+    () => localStorage.getItem(DEFAULT_DOWNLOAD_DIR_KEY) || ""
+  );
+  const [systemDefaultDir, setSystemDefaultDir] = useState("");
+  useEffect(() => {
+    api.getDefaultDownloadDir().then(setSystemDefaultDir).catch((e) => console.error("Failed to get default download dir:", e));
+  }, []);
+  const effectiveDownloadDir = downloadDir || systemDefaultDir;
+
+  const [maxConcurrent, setMaxConcurrentState] = useState(3);
+  useEffect(() => {
+    api.getMaxConcurrent().then(setMaxConcurrentState).catch((e) => console.error("Failed to get concurrency limit:", e));
+  }, []);
+
+  const [filenameTemplate, setFilenameTemplate] = useState<string>(
+    () => localStorage.getItem(FILENAME_TEMPLATE_KEY) || ""
+  );
+
   const [appVersion, setAppVersion] = useState("");
   useEffect(() => {
     api.getAppVersion().then(setAppVersion).catch((e) => console.error("Failed to get app version:", e));
@@ -87,6 +111,46 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     localStorage.removeItem("yt-cookies-file");
   };
 
+  const handleSelectDownloadDir = async () => {
+    try {
+      const sel = await open({ directory: true, defaultPath: effectiveDownloadDir || undefined });
+      if (sel && typeof sel === "string") {
+        setDownloadDir(sel);
+        localStorage.setItem(DEFAULT_DOWNLOAD_DIR_KEY, sel);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleResetDownloadDir = () => {
+    setDownloadDir("");
+    localStorage.removeItem(DEFAULT_DOWNLOAD_DIR_KEY);
+  };
+
+  const handleMaxConcurrentChange = async (value: number) => {
+    setMaxConcurrentState(value);
+    try {
+      await api.setMaxConcurrent(value);
+    } catch (e) {
+      console.error("Failed to set concurrency limit:", e);
+    }
+  };
+
+  const handleFilenameTemplateChange = (value: string) => {
+    setFilenameTemplate(value);
+    if (value.trim()) {
+      localStorage.setItem(FILENAME_TEMPLATE_KEY, value);
+    } else {
+      localStorage.removeItem(FILENAME_TEMPLATE_KEY);
+    }
+  };
+
+  const handleResetFilenameTemplate = () => {
+    setFilenameTemplate("");
+    localStorage.removeItem(FILENAME_TEMPLATE_KEY);
+  };
+
   const handleLanguageChange = (code: LangCode) => {
     setLanguage(code);
   };
@@ -106,6 +170,74 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
 
         <div className="settings-drawer__body">
+
+          {/* ── Section: Default Download Location ─── */}
+          <section className="settings-section">
+            <h3 className="settings-section__title"><IconFolderOpen size={16} /> {t("settings_downloadDir")}</h3>
+            <p className="settings-section__desc">{t("settings_downloadDirDesc")}</p>
+
+            <div className="settings-cookies-row">
+              <div className="settings-cookies-file">
+                <span className="settings-cookies-icon"><IconFolderOpen size={14} /></span>
+                <span className="settings-cookies-name" title={effectiveDownloadDir}>
+                  {effectiveDownloadDir || "—"}
+                </span>
+              </div>
+              <div className="settings-cookies-actions">
+                <button className="btn btn-secondary btn-sm" onClick={handleSelectDownloadDir}>
+                  {t("settings_selectDownloadDir")}
+                </button>
+                {downloadDir && (
+                  <button className="btn btn-danger-ghost btn-sm" onClick={handleResetDownloadDir}>
+                    {t("settings_resetDownloadDir")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <div className="settings-divider" />
+
+          {/* ── Section: Filename Template ─────────── */}
+          <section className="settings-section">
+            <h3 className="settings-section__title"><IconFile size={16} /> {t("settings_filenameTemplate")}</h3>
+            <p className="settings-section__desc">{t("settings_filenameTemplateDesc")}</p>
+
+            <div className="settings-cookies-row">
+              <input
+                type="text"
+                className="form-input"
+                placeholder={DEFAULT_FILENAME_TEMPLATE}
+                value={filenameTemplate}
+                onChange={(e) => handleFilenameTemplateChange(e.target.value)}
+              />
+              {filenameTemplate && (
+                <button className="btn btn-danger-ghost btn-sm" onClick={handleResetFilenameTemplate}>
+                  {t("settings_resetDownloadDir")}
+                </button>
+              )}
+            </div>
+          </section>
+
+          <div className="settings-divider" />
+
+          {/* ── Section: Concurrent Downloads ──────── */}
+          <section className="settings-section">
+            <h3 className="settings-section__title"><IconDownload size={16} /> {t("settings_concurrency")}</h3>
+            <p className="settings-section__desc">{t("settings_concurrencyDesc")}</p>
+
+            <select
+              className="form-select settings-concurrency-select"
+              value={maxConcurrent}
+              onChange={(e) => handleMaxConcurrentChange(Number(e.target.value))}
+            >
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </section>
+
+          <div className="settings-divider" />
 
           {/* ── Section: Cookies ──────────────────── */}
           <section className="settings-section">

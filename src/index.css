@@ -169,6 +169,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 /* Solid tile, not just an outline: black-on-white in light mode, white-on-
@@ -213,6 +214,18 @@ body {
   gap: var(--space-md);
   min-height: 60px;
   -webkit-app-region: drag;
+  /* Safety net: if everything below still doesn't fit a narrow window,
+     scroll rather than silently clip controls (Settings) out of reach.
+     The bar itself is hidden (still scrollable via trackpad/shift+wheel) —
+     a persistent scrollbar under a toolbar reads as a layout bug. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.top-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .top-bar > * {
@@ -229,6 +242,47 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 34px;
+  width: 160px;
+  min-width: 70px;
+  flex-shrink: 2;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.search-box__icon {
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+
+.search-box__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--ink-0);
+}
+
+.search-box__input::placeholder {
+  color: var(--ink-2);
 }
 
 /* ===== Buttons ===== */
@@ -311,6 +365,8 @@ body {
 .btn-add-download {
   padding: 9px 18px 9px 14px;
   font-size: 0.875rem;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .btn-icon {
@@ -520,7 +576,8 @@ body {
 
 .progress-downloading,
 .progress-processing,
-.progress-connecting {
+.progress-connecting,
+.progress-paused {
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -550,6 +607,19 @@ body {
 
 .progress-bar-fill.processing {
   background-color: var(--moss);
+}
+
+.progress-bar-fill.failed {
+  background-color: var(--rust);
+}
+
+.progress-bar-fill.paused {
+  background-color: var(--ink-2);
+  background-image: none;
+}
+
+.paused-label {
+  color: var(--ink-2);
 }
 
 .progress-bar-indeterminate {
@@ -1048,6 +1118,142 @@ body {
 .btn-browse {
   white-space: nowrap;
   padding: 10px 16px;
+}
+
+/* ===== Form static note (e.g. playlist audio quality — no per-item probe) === */
+.form-static-note {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+/* ===== Playlist Picker ===== */
+.playlist-picker {
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.playlist-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.playlist-picker__count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+
+.playlist-entry-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.playlist-entry-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 7px var(--space-md);
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  transition: background var(--transition-fast);
+}
+
+.playlist-entry-row:last-child {
+  border-bottom: none;
+}
+
+.playlist-entry-row:hover {
+  background: var(--bg-hover);
+}
+
+.playlist-entry-index {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  min-width: 24px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.playlist-entry-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playlist-entry-duration {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+
+/* ===== Playlist group row (main list) ===== */
+.playlist-group-icon {
+  color: var(--accent);
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* ===== Playlist breadcrumb (drill-down header) ===== */
+.playlist-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.playlist-breadcrumb__back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: var(--ink-1);
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.playlist-breadcrumb__back:hover {
+  background: var(--bg-hover);
+  color: var(--ink-0);
+}
+
+.playlist-breadcrumb__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playlist-breadcrumb__count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  flex-shrink: 0;
 }
 
 /* ===== Context Menu ===== */
@@ -1659,6 +1865,10 @@ body {
   flex-shrink: 0;
 }
 
+.settings-concurrency-select {
+  max-width: 120px;
+}
+
 .btn-sm {
   height: 28px;
   padding: 0 10px;
@@ -1749,6 +1959,20 @@ body {
 
 .btn-settings {
   gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Below this width, drop secondary button text and lean on icons + the
+   existing title tooltips — the toolbar can grow several buttons wide once
+   a download is selected (Show/Rename/Retry/Remove/Delete), and previously
+   had no fallback besides silently pushing Settings off-screen. */
+.top-bar--compact .top-bar-actions .btn-label,
+.top-bar--compact .btn-settings .btn-label {
+  display: none;
+}
+
+.top-bar--compact .search-box {
+  width: 110px;
 }
 
 /* ===== Language Selection Screen ===== */

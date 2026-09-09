@@ -65,6 +65,21 @@ export const ProgressCell: React.FC<ProgressCellProps> = ({ download }) => {
         <span className="progress-label pending-label">{t("progress_queued")}</span>
       )}
 
+      {status === "paused" && (
+        <div className="progress-paused">
+          <div className="progress-bar-track">
+            <div
+              className="progress-bar-fill paused"
+              style={{ width: `${Math.min(progress, 100)}%` }}
+            />
+          </div>
+          <div className="progress-info">
+            <span className="progress-percent">{progress.toFixed(1)}%</span>
+            <span className="progress-label paused-label">{t("progress_paused")}</span>
+          </div>
+        </div>
+      )}
+
       {status === "cancelled" && (
         <span className="progress-label cancelled-label">{t("progress_cancelled")}</span>
       )}

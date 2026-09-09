@@ -1,11 +1,12 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useDownloadStore } from "../store/useDownloadStore";
 import { DownloadRow } from "./DownloadRow";
+import { PlaylistGroupRow, type PlaylistGroupInfo } from "./PlaylistGroupRow";
 import { useContextMenu } from "../hooks/useContextMenu";
 import { useDownloadListShortcuts } from "../hooks/useDownloadListShortcuts";
 import { ContextMenu } from "./ContextMenu";
-import { IconLogo, IconChevronUp, IconChevronDown } from "./Icons";
+import { IconLogo, IconChevronUp, IconChevronDown, IconChevronLeft } from "./Icons";
 import { useLanguage } from "../hooks/useLanguage";
 import type { DownloadEntry, SortKey } from "../types";
 
@@ -67,8 +68,18 @@ export const DownloadList: React.FC = () => {
   // unrelated store change (opening Settings, a rename dialog, etc.) would
   // re-render the whole table too, since the default `useDownloadStore()`
   // subscribes to every field regardless of which ones are destructured.
-  const { downloads, selectedIds, selectId, isMultiSelectMode, sortKey, sortDirection, toggleSort } =
-    useDownloadStore(
+  const {
+    downloads,
+    selectedIds,
+    selectId,
+    isMultiSelectMode,
+    sortKey,
+    sortDirection,
+    toggleSort,
+    openPlaylistId,
+    setOpenPlaylistId,
+    searchQuery,
+  } = useDownloadStore(
       useShallow((s) => ({
         downloads: s.downloads,
         selectedIds: s.selectedIds,
@@ -77,6 +88,9 @@ export const DownloadList: React.FC = () => {
         sortKey: s.sortKey,
         sortDirection: s.sortDirection,
         toggleSort: s.toggleSort,
+        openPlaylistId: s.openPlaylistId,
+        setOpenPlaylistId: s.setOpenPlaylistId,
+        searchQuery: s.searchQuery,
       }))
     );
   const { contextMenu, handleContextMenu, closeContextMenu } =
@@ -95,24 +109,88 @@ export const DownloadList: React.FC = () => {
     [isMultiSelectMode, selectId]
   );
 
+  // Split the flat list into standalone downloads and playlist batches —
+  // entries sharing a `playlist_id` collapse into one group row at the top
+  // level, with their own view when that group is opened.
+  const { standaloneDownloads, playlistGroups } = useMemo(() => {
+    const standalone: DownloadEntry[] = [];
+    const groupMap = new Map<string, PlaylistGroupInfo>();
+    const groupOrder: string[] = [];
+    for (const d of downloads) {
+      if (!d.playlist_id) {
+        standalone.push(d);
+        continue;
+      }
+      let group = groupMap.get(d.playlist_id);
+      if (!group) {
+        group = { id: d.playlist_id, title: d.playlist_title || d.playlist_id, createdAt: d.created_at, children: [] };
+        groupMap.set(d.playlist_id, group);
+        groupOrder.push(d.playlist_id);
+      }
+      group.children.push(d);
+    }
+    const playlistGroups = groupOrder
+      .map((id) => groupMap.get(id)!)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return { standaloneDownloads: standalone, playlistGroups };
+  }, [downloads]);
+
+  const openGroup = openPlaylistId ? playlistGroups.find((g) => g.id === openPlaylistId) ?? null : null;
+  const activeEntries = openPlaylistId ? openGroup?.children ?? [] : standaloneDownloads;
+
+  // A playlist view that's lost all its entries (e.g. every video was
+  // individually deleted from within it) would otherwise be a dead end —
+  // fall back to the top-level list instead.
+  useEffect(() => {
+    if (openPlaylistId && activeEntries.length === 0) {
+      setOpenPlaylistId(null);
+    }
+  }, [openPlaylistId, activeEntries.length, setOpenPlaylistId]);
+
   const sortedDownloads = useMemo(() => {
-    if (!sortKey) return downloads;
-    const sorted = [...downloads].sort((a, b) => compareDownloads(a, b, sortKey));
+    if (!sortKey) return activeEntries;
+    const sorted = [...activeEntries].sort((a, b) => compareDownloads(a, b, sortKey));
     if (sortDirection === "desc") sorted.reverse();
     return sorted;
-  }, [downloads, sortKey, sortDirection]);
+  }, [activeEntries, sortKey, sortDirection]);
+
+  // Search filters the current view's display only — it never affects the
+  // "playlist emptied out" check above, so a search matching nothing inside
+  // an open playlist shows "no results" instead of bouncing back to the
+  // top-level list.
+  const searchLower = searchQuery.trim().toLowerCase();
+  const visibleDownloads = useMemo(() => {
+    if (!searchLower) return sortedDownloads;
+    return sortedDownloads.filter((d) => d.title.toLowerCase().includes(searchLower));
+  }, [sortedDownloads, searchLower]);
+  const visibleGroups = useMemo(() => {
+    if (!searchLower) return playlistGroups;
+    return playlistGroups.filter((g) => g.title.toLowerCase().includes(searchLower));
+  }, [playlistGroups, searchLower]);
+
+  const isEmpty = openPlaylistId
+    ? visibleDownloads.length === 0
+    : visibleDownloads.length === 0 && visibleGroups.length === 0;
 
   return (
     <div className="download-list-container">
-      {downloads.length === 0 ? (
+      {openPlaylistId && openGroup && (
+        <div className="playlist-breadcrumb">
+          <button className="playlist-breadcrumb__back" onClick={() => setOpenPlaylistId(null)}>
+            <IconChevronLeft size={15} /> {t("playlist_back")}
+          </button>
+          <span className="playlist-breadcrumb__title">{openGroup.title}</span>
+          <span className="playlist-breadcrumb__count">{openGroup.children.length}</span>
+        </div>
+      )}
+
+      {isEmpty ? (
         <div className="empty-state">
           <div className="empty-icon">
             <IconLogo size={28} />
           </div>
-          <h3 className="empty-title">{t("empty_title")}</h3>
-          <p className="empty-description">
-            {t("empty_desc")}
-          </p>
+          <h3 className="empty-title">{searchLower ? t("empty_noResultsTitle") : t("empty_title")}</h3>
+          {!searchLower && <p className="empty-description">{t("empty_desc")}</p>}
         </div>
       ) : (
         <div className="table-wrapper">
@@ -163,7 +241,17 @@ export const DownloadList: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {sortedDownloads.map((dl) => (
+              {!openPlaylistId &&
+                visibleGroups.map((group) => (
+                  <PlaylistGroupRow
+                    key={group.id}
+                    group={group}
+                    isMultiSelectMode={isMultiSelectMode}
+                    onOpen={setOpenPlaylistId}
+                    onContextMenu={handleContextMenu}
+                  />
+                ))}
+              {visibleDownloads.map((dl) => (
                 <DownloadRow
                   key={dl.id}
                   download={dl}

@@ -5,6 +5,7 @@ import type {
   AppUpdateInfo,
   DependencyStatus,
   DownloadEntry,
+  PlaylistAnalysisResult,
   UpdateCheckResult,
 } from "../types";
 
@@ -54,6 +55,10 @@ export async function abortAnalysis(): Promise<void> {
   return invoke("abort_analysis");
 }
 
+export async function analyzePlaylist(url: string, cookiesFile?: string): Promise<PlaylistAnalysisResult> {
+  return invoke("analyze_playlist", { url, cookiesFile: cookiesFile || null });
+}
+
 // ===== Download Commands =====
 
 export async function startDownload(params: {
@@ -63,12 +68,23 @@ export async function startDownload(params: {
   formatArgs: string[];
   outputPath: string;
   kind: string;
+  playlistId?: string;
+  playlistTitle?: string;
 }): Promise<void> {
-  return invoke("start_download", params);
+  return invoke("start_download", {
+    ...params,
+    playlistId: params.playlistId ?? null,
+    playlistTitle: params.playlistTitle ?? null,
+  });
 }
 
 export async function cancelDownload(id: string): Promise<void> {
   return invoke("cancel_download", { id });
+}
+
+/** Restarts a failed download from scratch using its originally stored args. */
+export async function retryDownload(id: string): Promise<void> {
+  return invoke("retry_download", { id });
 }
 
 export async function getDownloads(): Promise<DownloadEntry[]> {
@@ -77,6 +93,26 @@ export async function getDownloads(): Promise<DownloadEntry[]> {
 
 export async function getDefaultDownloadDir(): Promise<string> {
   return invoke("get_default_download_dir");
+}
+
+export async function getMaxConcurrent(): Promise<number> {
+  return invoke("get_max_concurrent");
+}
+
+export async function setMaxConcurrent(value: number): Promise<void> {
+  return invoke("set_max_concurrent", { value });
+}
+
+/**
+ * Copies a user-selected cookies.txt into the app's private data dir and
+ * returns that copy's path. yt-dlp rewrites whatever file `--cookies`
+ * points at with refreshed session cookies after each run — passing this
+ * private copy instead of the user's original file keeps that rewrite from
+ * landing wherever they picked their cookies file from (e.g. their
+ * downloads folder).
+ */
+export async function importCookiesFile(sourcePath: string): Promise<string> {
+  return invoke("import_cookies_file", { sourcePath });
 }
 
 // ===== File Operation Commands =====

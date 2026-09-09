@@ -14,12 +14,6 @@ interface DownloadRowProps {
   onContextMenu: (e: React.MouseEvent, id: string) => void;
 }
 
-const kindLabels: Record<string, string> = {
-  video: "Video",
-  audio: "Audio",
-  videoaudio: "Video",
-};
-
 const KindIcon: React.FC<{ kind: string }> = ({ kind }) => {
   switch (kind) {
     case "video":
@@ -44,7 +38,12 @@ export const DownloadRow: React.FC<DownloadRowProps> = React.memo(function Downl
   onSelect,
   onContextMenu,
 }) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
+  const kindLabels: Record<string, string> = {
+    video: t("modal_tabVideo"),
+    audio: t("modal_tabAudio"),
+    videoaudio: t("modal_tabVideo"),
+  };
   const isDraggable = download.status === "completed" && !!download.file_path;
   const [isDragging, setIsDragging] = useState(false);
   // Track whether a drag was initiated so we can suppress the click on mouseup

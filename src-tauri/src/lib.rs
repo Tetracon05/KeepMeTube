@@ -30,7 +30,8 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_drag::init())
-        .plugin(tauri_plugin_updater::Builder::new().build());
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_clipboard_manager::init());
 
     // Native app/File/Edit menu bar — macOS only, leaves Windows/Linux
     // (which have no menu bar in this app) untouched.
@@ -59,14 +60,16 @@ pub fn run() {
             let ffmpeg_path = binary_resolver::resolve_sidecar_path(app.handle(), "ffmpeg")
                 .unwrap_or_else(|_| std::path::PathBuf::from("ffmpeg"));
 
-            // Load persisted downloads
+            // Load persisted downloads and settings
             let downloads = store::load_downloads(&data_dir);
+            let max_concurrent = store::load_max_concurrent(&data_dir);
 
             let app_state = AppState::new(
                 data_dir,
                 downloads,
                 yt_dlp_path.to_string_lossy().to_string(),
                 ffmpeg_path.to_string_lossy().to_string(),
+                max_concurrent,
             );
 
             app.manage(app_state);
@@ -77,11 +80,16 @@ pub fn run() {
             commands::dependency::check_yt_dlp_update,
             commands::dependency::update_yt_dlp,
             commands::analyze::analyze_url,
+            commands::analyze::analyze_playlist,
             commands::analyze::abort_analysis,
             commands::download::start_download,
             commands::download::cancel_download,
+            commands::download::retry_download,
             commands::download::get_downloads,
             commands::download::get_default_download_dir,
+            commands::download::get_max_concurrent,
+            commands::download::set_max_concurrent,
+            commands::file_ops::import_cookies_file,
             commands::file_ops::delete_download,
             commands::file_ops::remove_download,
             commands::file_ops::rename_download,

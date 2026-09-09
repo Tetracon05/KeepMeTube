@@ -134,6 +134,10 @@ export const IconChevronDown: React.FC<IconProps> = (p) => (
   <Icon {...p}><polyline points="6 9 12 15 18 9"/></Icon>
 );
 
+export const IconChevronLeft: React.FC<IconProps> = (p) => (
+  <Icon {...p}><polyline points="15 18 9 12 15 6"/></Icon>
+);
+
 export const IconShield: React.FC<IconProps> = (p) => (
   <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Icon>
 );
@@ -148,6 +152,10 @@ export const IconGlobe: React.FC<IconProps> = (p) => (
 
 export const IconRefreshCw: React.FC<IconProps> = (p) => (
   <Icon {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></Icon>
+);
+
+export const IconSearch: React.FC<IconProps> = (p) => (
+  <Icon {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></Icon>
 );
 
 export const IconInfo: React.FC<IconProps> = (p) => (

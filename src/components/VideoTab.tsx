@@ -1,9 +1,14 @@
 import React from "react";
-import type { AnalysisResult } from "../types";
-import { deduplicateResolutions } from "../lib/utils";
+import { useLanguage } from "../hooks/useLanguage";
+
+export interface ResolutionOption {
+  value: string;
+  label: string;
+}
 
 interface VideoTabProps {
-  analysis: AnalysisResult;
+  resolutions: ResolutionOption[];
+  fpsOptions: number[];
   selectedResolution: string;
   setSelectedResolution: (r: string) => void;
   selectedFps: string;
@@ -12,10 +17,13 @@ interface VideoTabProps {
   setSelectedContainer: (c: string) => void;
   videoOnly: boolean;
   setVideoOnly: (v: boolean) => void;
+  downloadSubtitles: boolean;
+  setDownloadSubtitles: (v: boolean) => void;
 }
 
 export const VideoTab: React.FC<VideoTabProps> = ({
-  analysis,
+  resolutions,
+  fpsOptions,
   selectedResolution,
   setSelectedResolution,
   selectedFps,
@@ -24,21 +32,10 @@ export const VideoTab: React.FC<VideoTabProps> = ({
   setSelectedContainer,
   videoOnly,
   setVideoOnly,
+  downloadSubtitles,
+  setDownloadSubtitles,
 }) => {
-  // Get available resolutions from video formats
-  const allVideoFormats = [...analysis.video_formats, ...analysis.combined_formats];
-  const resolutions = deduplicateResolutions(allVideoFormats);
-
-  // Get available FPS for the selected resolution
-  const selectedHeight = parseInt(selectedResolution) || 0;
-  const fpsOptions = Array.from(
-    new Set(
-      allVideoFormats
-        .filter((f) => f.height === selectedHeight && f.fps)
-        .map((f) => Math.round(f.fps!))
-    )
-  ).sort((a, b) => b - a);
-
+  const { t } = useLanguage();
   return (
     <div className="tab-content">
       <div className="form-group">
@@ -49,7 +46,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
           onChange={(e) => setSelectedResolution(e.target.value)}
         >
           {resolutions.map((r) => (
-            <option key={r.height} value={String(r.height)}>
+            <option key={r.value} value={r.value}>
               {r.label}
             </option>
           ))}
@@ -98,6 +95,18 @@ export const VideoTab: React.FC<VideoTabProps> = ({
             onChange={(e) => setVideoOnly(e.target.checked)}
           />
           <span className="checkbox-text">Video only (no audio)</span>
+        </label>
+      </div>
+
+      <div className="form-group">
+        <label className="form-checkbox-label">
+          <input
+            type="checkbox"
+            className="form-checkbox"
+            checked={downloadSubtitles}
+            onChange={(e) => setDownloadSubtitles(e.target.checked)}
+          />
+          <span className="checkbox-text">{t("modal_downloadSubtitles")}</span>
         </label>
       </div>
     </div>

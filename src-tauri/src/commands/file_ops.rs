@@ -4,6 +4,27 @@ use std::fs;
 use std::path::Path;
 use tauri::{Manager, State};
 
+/// Copy a user-selected cookies.txt into the app's private data directory
+/// and return the copy's path.
+///
+/// yt-dlp treats `--cookies FILE` as a read/write jar: after a run it
+/// rewrites FILE with refreshed session cookies. Passing the user's own
+/// file straight through means that rewrite happens wherever they picked it
+/// from — if that's their download folder, it looks like a stray cookies
+/// file appearing after every download. Using a private copy keeps that
+/// rewriting entirely inside the app's own data dir instead.
+#[tauri::command]
+pub async fn import_cookies_file(
+    state: State<'_, AppState>,
+    source_path: String,
+) -> Result<String, String> {
+    let data_dir = state.data_dir.lock().await.clone();
+    let dest_path = Path::new(&data_dir).join("cookies.txt");
+    fs::copy(&source_path, &dest_path)
+        .map_err(|e| format!("Failed to import cookies file: {}", e))?;
+    Ok(dest_path.to_string_lossy().to_string())
+}
+
 /// Delete a download entry AND its file from disk
 #[tauri::command]
 pub async fn delete_download(

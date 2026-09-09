@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   IconPlus,
   IconFolderOpen,
@@ -7,9 +7,12 @@ import {
   IconTrash,
   IconCheckSquare,
   IconLogo,
+  IconSearch,
+  IconRefreshCw,
 } from "./Icons";
 import { useLanguage } from "../hooks/useLanguage";
 import { useDownloadActions } from "../hooks/useDownloadActions";
+import { useDownloadStore } from "../store/useDownloadStore";
 
 interface TopBarProps {
   onOpenSettings: () => void;
@@ -22,6 +25,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSettings }) => {
     singleSelected,
     hasSelection,
     isCompleted,
+    canRetry,
     isMultiSelectMode,
     setAddPanelOpen,
     toggleMultiSelectMode,
@@ -29,10 +33,54 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSettings }) => {
     handleDelete,
     handleRemove,
     handleShowInFolder,
+    handleRetry,
   } = useDownloadActions();
+  const searchQuery = useDownloadStore((s) => s.searchQuery);
+  const setSearchQuery = useDownloadStore((s) => s.setSearchQuery);
+
+  // Drop button labels (icon-only) exactly when the toolbar's actual
+  // content no longer fits — a fixed pixel breakpoint can't get this right
+  // for every language (label lengths vary a lot) or every display's DPI
+  // scaling, so it either clips controls too soon or goes icon-only with
+  // room to spare.
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const [isCompact, setIsCompact] = useState(false);
+
+  const checkOverflow = useCallback(() => {
+    const el = topBarRef.current;
+    if (!el) return;
+    // Measure as if expanded, regardless of the current state, so shrinking
+    // the window and then growing it back re-expands correctly instead of
+    // getting stuck compact.
+    const wasCompact = el.classList.contains("top-bar--compact");
+    if (wasCompact) el.classList.remove("top-bar--compact");
+    const fits = el.scrollWidth <= el.clientWidth;
+    if (wasCompact) el.classList.add("top-bar--compact");
+    setIsCompact(!fits);
+  }, []);
+
+  // Re-check on an actual window resize — the toolbar's own box changes
+  // width, which ResizeObserver reports.
+  useLayoutEffect(() => {
+    const el = topBarRef.current;
+    if (!el) return;
+    checkOverflow();
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checkOverflow]);
+
+  // Also re-check whenever the set of rendered buttons changes — selecting
+  // an item adds Show/Rename/Retry/Remove/Delete, which can overflow
+  // without the toolbar's own box size changing at all, so ResizeObserver
+  // alone never notices (it only reports box-size changes, not children
+  // overflowing inside a fixed-width container).
+  useLayoutEffect(() => {
+    checkOverflow();
+  }, [checkOverflow, hasSelection, isCompleted, canRetry]);
 
   return (
-    <div className="top-bar">
+    <div className={`top-bar${isCompact ? " top-bar--compact" : ""}`} ref={topBarRef}>
       <div className="brand">
         <div className="logo-mark">
           <IconLogo size={16} />
@@ -79,6 +127,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSettings }) => {
           </>
         )}
 
+        {singleSelected && canRetry && (
+          <button className="btn btn-action" onClick={handleRetry} title={t("topBar_retry")}>
+            <IconRefreshCw size={15} />
+            <span className="btn-label">{t("topBar_retry")}</span>
+          </button>
+        )}
+
         {hasSelection && (
           <>
             <button className="btn btn-action" onClick={handleRemove} title={t("topBar_remove")}>
@@ -96,6 +151,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSettings }) => {
       </div>
 
       <div style={{ flex: 1 }} />
+
+      <div className="search-box">
+        <IconSearch size={14} className="search-box__icon" />
+        <input
+          type="text"
+          className="search-box__input"
+          placeholder={t("topBar_searchPlaceholder")}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
 
       {/* Settings button */}
       <button

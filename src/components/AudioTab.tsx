@@ -1,53 +1,62 @@
 import React from "react";
-import type { AnalysisResult } from "../types";
+import { useLanguage } from "../hooks/useLanguage";
+
+export interface BitrateOption {
+  bitrate: number;
+  formatId: string;
+  codec: string;
+}
 
 interface AudioTabProps {
-  analysis: AnalysisResult;
+  bitrateOptions: BitrateOption[];
   selectedAudioFormat: string;
   setSelectedAudioFormat: (f: string) => void;
   selectedAudioContainer: string;
   setSelectedAudioContainer: (c: string) => void;
+  /** True when quality can't be probed per-item (playlist mode) — yt-dlp
+   * picks the best available source audio for each video automatically. */
+  isPlaylistMode?: boolean;
+  embedThumbnail: boolean;
+  setEmbedThumbnail: (v: boolean) => void;
+  embedMetadata: boolean;
+  setEmbedMetadata: (v: boolean) => void;
 }
 
 export const AudioTab: React.FC<AudioTabProps> = ({
-  analysis,
+  bitrateOptions,
   selectedAudioFormat,
   setSelectedAudioFormat,
   selectedAudioContainer,
   setSelectedAudioContainer,
+  isPlaylistMode,
+  embedThumbnail,
+  setEmbedThumbnail,
+  embedMetadata,
+  setEmbedMetadata,
 }) => {
-  const audioFormats = analysis.audio_formats;
-
-  // Deduplicate by bitrate
-  const bitrateOptions = Array.from(
-    new Map(
-      audioFormats
-        .filter((f) => f.abr)
-        .map((f) => [
-          Math.round(f.abr!),
-          { bitrate: Math.round(f.abr!), formatId: f.format_id, codec: f.acodec },
-        ])
-    ).values()
-  ).sort((a, b) => b.bitrate - a.bitrate);
-
+  const { t } = useLanguage();
   return (
     <div className="tab-content">
       <div className="form-group">
         <label className="form-label">Audio Quality</label>
-        <select
-          className="form-select"
-          value={selectedAudioFormat}
-          onChange={(e) => setSelectedAudioFormat(e.target.value)}
-        >
-          {bitrateOptions.map((opt) => (
-            <option key={opt.formatId} value={opt.formatId}>
-              {opt.bitrate} kbps ({opt.codec})
-            </option>
-          ))}
-          {bitrateOptions.length === 0 && (
-            <option value="">No audio formats available</option>
-          )}
-        </select>
+        {bitrateOptions.length === 0 && isPlaylistMode ? (
+          <p className="form-static-note">Best available quality (auto)</p>
+        ) : (
+          <select
+            className="form-select"
+            value={selectedAudioFormat}
+            onChange={(e) => setSelectedAudioFormat(e.target.value)}
+          >
+            {bitrateOptions.map((opt) => (
+              <option key={opt.formatId} value={opt.formatId}>
+                {opt.bitrate} kbps ({opt.codec})
+              </option>
+            ))}
+            {bitrateOptions.length === 0 && (
+              <option value="">No audio formats available</option>
+            )}
+          </select>
+        )}
       </div>
 
       <div className="form-group">
@@ -62,6 +71,30 @@ export const AudioTab: React.FC<AudioTabProps> = ({
           <option value="opus">Opus</option>
           <option value="wav">WAV</option>
         </select>
+      </div>
+
+      <div className="form-group">
+        <label className="form-checkbox-label">
+          <input
+            type="checkbox"
+            className="form-checkbox"
+            checked={embedThumbnail}
+            onChange={(e) => setEmbedThumbnail(e.target.checked)}
+          />
+          <span className="checkbox-text">{t("modal_embedThumbnail")}</span>
+        </label>
+      </div>
+
+      <div className="form-group">
+        <label className="form-checkbox-label">
+          <input
+            type="checkbox"
+            className="form-checkbox"
+            checked={embedMetadata}
+            onChange={(e) => setEmbedMetadata(e.target.checked)}
+          />
+          <span className="checkbox-text">{t("modal_embedMetadata")}</span>
+        </label>
       </div>
     </div>
   );

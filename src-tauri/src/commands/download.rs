@@ -1,10 +1,16 @@
 use crate::state::{AppState, DownloadEntry, DownloadKind, DownloadStatus, ProgressEvent};
 use crate::store;
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::process::Stdio;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tauri::{Emitter, State, AppHandle};
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command;
+use tokio::process::{Child, Command};
+use tokio::sync::Mutex;
 
 /// Minimum time between full downloads.json rewrites while a download is
 /// actively streaming progress. yt-dlp's `--newline` progress lines can
@@ -25,6 +31,8 @@ pub async fn start_download(
     format_args: Vec<String>,
     output_path: String,
     kind: String,
+    playlist_id: Option<String>,
+    playlist_title: Option<String>,
 ) -> Result<(), String> {
     let download_kind = match kind.as_str() {
         "video" => DownloadKind::Video,
@@ -45,6 +53,8 @@ pub async fn start_download(
         error: None,
         created_at: chrono::Utc::now().to_rfc3339(),
         format_args: format_args.clone(),
+        playlist_id,
+        playlist_title,
     };
 
     // Add to downloads list
@@ -55,13 +65,25 @@ pub async fn start_download(
         store::save_downloads(&data_dir, &downloads);
     }
 
-    // Check concurrent download limit
-    let active_count = {
-        let processes = state.active_processes.lock().await;
-        processes.len()
-    };
+    begin_download(app, &state, id, url, format_args, output_path).await
+}
 
-    if active_count >= state.max_concurrent {
+/// Spawn a download now if there's a free concurrency slot, otherwise queue
+/// it as `Pending`. Shared by `start_download` (a brand-new entry, already
+/// pushed to the list) and `retry_download` (an existing entry being
+/// restarted), since both boil down to the same decision.
+async fn begin_download(
+    app: AppHandle,
+    state: &AppState,
+    id: String,
+    url: String,
+    format_args: Vec<String>,
+    output_path: String,
+) -> Result<(), String> {
+    let max_concurrent = state.max_concurrent.load(Ordering::Relaxed);
+    let active_count = state.active_processes.lock().await.len();
+
+    if active_count >= max_concurrent {
         // Queue it as pending
         let mut downloads = state.downloads.lock().await;
         if let Some(dl) = downloads.iter_mut().find(|d| d.id == id) {
@@ -83,18 +105,47 @@ pub async fn start_download(
     }
 
     // Spawn the actual download
-    spawn_download(app, state, id, url, format_args, output_path).await
+    spawn_download(
+        app,
+        state.yt_dlp_path.clone(),
+        state.downloads.clone(),
+        state.data_dir.clone(),
+        state.active_processes.clone(),
+        max_concurrent,
+        id,
+        url,
+        format_args,
+        output_path,
+    )
+    .await
 }
 
-/// Spawn the yt-dlp download subprocess
-async fn spawn_download(
+/// Spawn the yt-dlp download subprocess.
+///
+/// Takes owned/cloned state pieces rather than `State<'_, AppState>` so it
+/// can also be called from `try_start_next_pending`, which runs inside an
+/// already-spawned background task (no live `State` borrow available there).
+///
+/// Returns a boxed future rather than being a plain `async fn`: this function
+/// and `try_start_next_pending` call each other (a slot freeing up promotes
+/// a pending entry, which spawns a download, whose completion tries to
+/// promote the next one), and two `async fn`s whose opaque return types
+/// refer to each other cause rustc's "cycle detected when computing type of
+/// opaque type" error. Returning `Pin<Box<dyn Future>>` here gives this
+/// function a concrete, non-opaque signature, which breaks the cycle.
+fn spawn_download(
     app: AppHandle,
-    state: State<'_, AppState>,
+    yt_dlp_path: String,
+    downloads: Arc<Mutex<Vec<DownloadEntry>>>,
+    data_dir: Arc<Mutex<String>>,
+    active_processes: Arc<Mutex<HashMap<String, Child>>>,
+    max_concurrent: usize,
     id: String,
     url: String,
     format_args: Vec<String>,
     output_path: String,
-) -> Result<(), String> {
+) -> Pin<Box<dyn Future<Output = Result<(), String>> + Send>> {
+    Box::pin(async move {
     let mut cmd_args = vec![
         "--newline".to_string(),
         "--no-playlist".to_string(),
@@ -134,7 +185,7 @@ async fn spawn_download(
     cmd_args.push(url);
 
     // Use the bundled yt-dlp binary path stored in AppState (no PATH dependency)
-    let mut cmd = Command::new(&state.yt_dlp_path);
+    let mut cmd = Command::new(&yt_dlp_path);
     cmd.args(&cmd_args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -159,15 +210,17 @@ async fn spawn_download(
 
     // Store process
     {
-        let mut processes = state.active_processes.lock().await;
+        let mut processes = active_processes.lock().await;
         processes.insert(id.clone(), child);
     }
 
     let app_clone = app.clone();
     let id_clone = id.clone();
-    let state_downloads = state.downloads.clone();
-    let state_data_dir = state.data_dir.clone();
-    let state_processes = state.active_processes.clone();
+    let state_downloads = downloads.clone();
+    let state_data_dir = data_dir.clone();
+    let state_processes = active_processes.clone();
+    let yt_dlp_path_for_next = yt_dlp_path.clone();
+    let app_for_next = app.clone();
 
     // Read stderr in background
     let stderr_content = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
@@ -349,9 +402,81 @@ async fn spawn_download(
             error: error_msg,
             file_size: computed_file_size,
         }).ok();
+
+        // A slot just freed up — try to promote the next queued download.
+        try_start_next_pending(
+            app_for_next,
+            yt_dlp_path_for_next,
+            state_downloads,
+            state_data_dir,
+            state_processes,
+            max_concurrent,
+        ).await;
     });
 
     Ok(())
+    })
+}
+
+/// If there's a free download slot, promote the oldest `Pending` entry to
+/// `Downloading` and spawn it.
+///
+/// `start_download` marks a download `Pending` when the concurrency limit is
+/// already reached, but nothing previously drained that queue once a slot
+/// freed up — entries just sat at `Pending` forever. That was latent as long
+/// as downloads were only ever added one at a time by hand; it becomes an
+/// immediate problem once a playlist can queue far more entries than
+/// `max_concurrent` at once. Called after a download finishes, fails, or is
+/// cancelled.
+async fn try_start_next_pending(
+    app: AppHandle,
+    yt_dlp_path: String,
+    downloads: Arc<Mutex<Vec<DownloadEntry>>>,
+    data_dir: Arc<Mutex<String>>,
+    active_processes: Arc<Mutex<HashMap<String, Child>>>,
+    max_concurrent: usize,
+) {
+    if active_processes.lock().await.len() >= max_concurrent {
+        return;
+    }
+
+    // Oldest Pending entry first (insertion order), so a queued playlist
+    // downloads in the order it was added.
+    let promoted = {
+        let mut downloads_guard = downloads.lock().await;
+        let next = downloads_guard
+            .iter_mut()
+            .find(|d| d.status == DownloadStatus::Pending);
+        next.map(|dl| {
+            dl.status = DownloadStatus::Downloading;
+            (dl.id.clone(), dl.url.clone(), dl.format_args.clone(), dl.file_path.clone())
+        })
+    };
+
+    let (id, url, format_args, output_path) = match promoted {
+        Some(v) => v,
+        None => return,
+    };
+
+    {
+        let downloads_guard = downloads.lock().await;
+        let dd = data_dir.lock().await;
+        store::save_downloads(&dd, &downloads_guard);
+    }
+
+    app.emit("download-progress", ProgressEvent {
+        id: id.clone(),
+        status: DownloadStatus::Downloading,
+        progress: 0.0,
+        speed: String::new(),
+        error: None,
+        file_size: None,
+    }).ok();
+
+    let _ = spawn_download(
+        app, yt_dlp_path, downloads, data_dir, active_processes, max_concurrent,
+        id, url, format_args, output_path,
+    ).await;
 }
 
 /// Cancel a download and remove partial files
@@ -390,7 +515,46 @@ pub async fn cancel_download(
         file_size: None,
     }).ok();
 
+    // A slot just freed up — try to promote the next queued download.
+    try_start_next_pending(
+        app,
+        state.yt_dlp_path.clone(),
+        state.downloads.clone(),
+        state.data_dir.clone(),
+        state.active_processes.clone(),
+        state.max_concurrent.load(Ordering::Relaxed),
+    ).await;
+
     Ok(())
+}
+
+/// Re-run a failed download using its stored url/format_args/output_path.
+///
+/// Pause/Resume was removed: YouTube's direct media URLs are short-lived
+/// and IP-locked, so a killed-and-later-resumed download frequently can't
+/// actually continue from its `.part` file — yt-dlp just restarts it, which
+/// is indistinguishable from Retry but with confusing "Paused" UI in
+/// between. Retry (re-running from scratch, no partial-resume promise) is
+/// the operation that actually works reliably.
+#[tauri::command]
+pub async fn retry_download(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<(), String> {
+    let (url, format_args, output_path) = {
+        let mut downloads = state.downloads.lock().await;
+        let dl = downloads
+            .iter_mut()
+            .find(|d| d.id == id)
+            .ok_or("Download not found")?;
+        dl.status = DownloadStatus::Downloading;
+        dl.speed = String::new();
+        dl.error = None;
+        (dl.url.clone(), dl.format_args.clone(), dl.file_path.clone())
+    };
+
+    begin_download(app, &state, id, url, format_args, output_path).await
 }
 
 /// Get all downloads from the state
@@ -407,4 +571,51 @@ pub async fn get_default_download_dir() -> Result<String, String> {
         .or_else(|| dirs::home_dir().map(|h| h.join("Downloads")))
         .map(|p| p.to_string_lossy().to_string())
         .ok_or_else(|| "Could not determine download directory".to_string())
+}
+
+/// Get the current concurrent-download limit.
+#[tauri::command]
+pub async fn get_max_concurrent(state: State<'_, AppState>) -> Result<usize, String> {
+    Ok(state.max_concurrent.load(Ordering::Relaxed))
+}
+
+/// Set the concurrent-download limit (clamped to 1-10) and persist it.
+#[tauri::command]
+pub async fn set_max_concurrent(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    value: usize,
+) -> Result<(), String> {
+    let clamped = value.clamp(1, 10);
+    state.max_concurrent.store(clamped, Ordering::Relaxed);
+    {
+        let data_dir = state.data_dir.lock().await;
+        store::save_max_concurrent(&data_dir, clamped);
+    }
+
+    // If the limit went up, promote as many now-fitting Pending entries as
+    // possible instead of leaving them queued until something else finishes.
+    loop {
+        let active_count = state.active_processes.lock().await.len();
+        if active_count >= clamped {
+            break;
+        }
+        let has_pending = {
+            let downloads = state.downloads.lock().await;
+            downloads.iter().any(|d| d.status == DownloadStatus::Pending)
+        };
+        if !has_pending {
+            break;
+        }
+        try_start_next_pending(
+            app.clone(),
+            state.yt_dlp_path.clone(),
+            state.downloads.clone(),
+            state.data_dir.clone(),
+            state.active_processes.clone(),
+            clamped,
+        ).await;
+    }
+
+    Ok(())
 }

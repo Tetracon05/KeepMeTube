@@ -33,6 +33,9 @@ export function useDownloadActions() {
   const selectedArray = [...selectedIds];
   const hasSelection = selectedArray.length > 0;
   const isCompleted = singleSelected?.status === "completed";
+  // "paused" can only exist from data written before Pause/Resume was
+  // removed — Retry still restarts it.
+  const canRetry = singleSelected?.status === "failed" || singleSelected?.status === "paused";
 
   const handleRename = () => {
     const { selectedIds, downloads, setRenameDialogId } = useDownloadStore.getState();
@@ -68,11 +71,23 @@ export function useDownloadActions() {
     await api.showInFolder(item.file_path);
   };
 
+  const handleRetry = async () => {
+    const { selectedIds } = useDownloadStore.getState();
+    if (selectedIds.size !== 1) return;
+    const id = [...selectedIds][0];
+    try {
+      await api.retryDownload(id);
+    } catch (err) {
+      console.error("Failed to retry:", id, err);
+    }
+  };
+
   return {
     selectedArray,
     singleSelected,
     hasSelection,
     isCompleted,
+    canRetry,
     isMultiSelectMode,
     setAddPanelOpen,
     toggleMultiSelectMode,
@@ -80,5 +95,6 @@ export function useDownloadActions() {
     handleDelete,
     handleRemove,
     handleShowInFolder,
+    handleRetry,
   };
 }
