@@ -39,7 +39,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
   return (
     <div className="tab-content">
       <div className="form-group">
-        <label className="form-label">Resolution</label>
+        <label className="form-label">{t("modal_resolution")}</label>
         <select
           className="form-select"
           value={selectedResolution}
@@ -51,14 +51,14 @@ export const VideoTab: React.FC<VideoTabProps> = ({
             </option>
           ))}
           {resolutions.length === 0 && (
-            <option value="">No video formats available</option>
+            <option value="">{t("modal_noVideoFormats")}</option>
           )}
         </select>
       </div>
 
       {fpsOptions.length > 1 && (
         <div className="form-group">
-          <label className="form-label">Frame Rate</label>
+          <label className="form-label">{t("modal_frameRate")}</label>
           <select
             className="form-select"
             value={selectedFps}
@@ -74,7 +74,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
       )}
 
       <div className="form-group">
-        <label className="form-label">Container Format</label>
+        <label className="form-label">{t("modal_containerFormat")}</label>
         <select
           className="form-select"
           value={selectedContainer}
@@ -94,7 +94,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
             checked={videoOnly}
             onChange={(e) => setVideoOnly(e.target.checked)}
           />
-          <span className="checkbox-text">Video only (no audio)</span>
+          <span className="checkbox-text">{t("modal_videoOnly")}</span>
         </label>
       </div>
 

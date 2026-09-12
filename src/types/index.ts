@@ -117,3 +117,6 @@ export type TabType = "video" | "audio";
 
 export type SortKey = "name" | "kind" | "size" | "date" | "progress";
 export type SortDirection = "asc" | "desc";
+
+/** Global download-speed cap applied to every new download. "fast" is unlimited. */
+export type SpeedMode = "slow" | "medium" | "fast";

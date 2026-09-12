@@ -13,6 +13,7 @@ import {
   sanitizeFilename,
   buildFormatArgs,
   applyFilenameTemplate,
+  getSpeedLimitKbps,
   DEFAULT_DOWNLOAD_DIR_KEY,
   FILENAME_TEMPLATE_KEY,
   DEFAULT_FILENAME_TEMPLATE,
@@ -44,14 +45,17 @@ export const AddDownloadModal: React.FC = () => {
   // holds a fair amount of its own state/effects — none of which depend on
   // `downloads`, so scoping this subscription means it no longer re-runs
   // on every download-progress tick while closed.
-  const { isAddPanelOpen, setAddPanelOpen, loadDownloads, addDownload } = useDownloadStore(
+  const { isAddPanelOpen, setAddPanelOpen, loadDownloads, addDownload, speedMode, speedLimits } = useDownloadStore(
     useShallow((s) => ({
       isAddPanelOpen: s.isAddPanelOpen,
       setAddPanelOpen: s.setAddPanelOpen,
       loadDownloads: s.loadDownloads,
       addDownload: s.addDownload,
+      speedMode: s.speedMode,
+      speedLimits: s.speedLimits,
     }))
   );
+  const limitRateKbps = getSpeedLimitKbps(speedMode, speedLimits);
   const { t } = useLanguage();
   const { contextMenu: urlContextMenu, handleContextMenu: handleUrlContextMenu, closeContextMenu: closeUrlContextMenu } =
     useContextMenu();
@@ -148,7 +152,7 @@ export const AddDownloadModal: React.FC = () => {
 
       if (!inputUrl.trim()) { setAnalyzing(false); return; }
       if (!inputUrl.startsWith("http://") && !inputUrl.startsWith("https://")) {
-        setAnalyzeError("Please enter a valid URL");
+        setAnalyzeError(t("modal_invalidUrl"));
         return;
       }
 
@@ -202,7 +206,7 @@ export const AddDownloadModal: React.FC = () => {
         }
       }, 500);
     },
-    [cookiesFile, effectiveCookiesPath]
+    [cookiesFile, effectiveCookiesPath, t]
   );
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -231,6 +235,7 @@ export const AddDownloadModal: React.FC = () => {
       downloadSubtitles,
       embedThumbnail,
       embedMetadata,
+      limitRateKbps,
     });
     const template = localStorage.getItem(FILENAME_TEMPLATE_KEY) || DEFAULT_FILENAME_TEMPLATE;
     const activeCookiesPath = effectiveCookiesPath || cookiesFile;
@@ -353,7 +358,7 @@ export const AddDownloadModal: React.FC = () => {
       const sel = await open({
         multiple: false,
         filters: [{ name: "Cookies", extensions: ["txt"] }, { name: "All", extensions: ["*"] }],
-        title: "Select cookies.txt exported from your browser",
+        title: t("modal_selectCookiesDialogTitle"),
       });
       if (sel && typeof sel === "string") {
         setCookiesFile(sel);
@@ -387,6 +392,7 @@ export const AddDownloadModal: React.FC = () => {
         downloadSubtitles,
         embedThumbnail,
         embedMetadata,
+        limitRateKbps,
       });
       const activeCookiesPath = effectiveCookiesPath || cookiesFile;
       const formatArgs = activeCookiesPath ? ["--cookies", activeCookiesPath, ...baseFormatArgs] : baseFormatArgs;
@@ -422,6 +428,7 @@ export const AddDownloadModal: React.FC = () => {
       downloadSubtitles,
       embedThumbnail,
       embedMetadata,
+      limitRateKbps,
     });
     const selectedEntries = playlistResult.entries.filter((e) => selectedEntryIds.has(e.id));
     // One shared id ties every queued entry back to this playlist so the
@@ -558,7 +565,7 @@ export const AddDownloadModal: React.FC = () => {
           {cookiesFile ? (
             <div className="cookies-banner cookies-banner--active">
               <span className="cookies-banner__icon"><IconCheckCircle size={15} /></span>
-              <span className="cookies-banner__text"><strong>Cookies:</strong> {cookiesFileName}</span>
+              <span className="cookies-banner__text"><strong>{t("modal_cookiesActive")}</strong> {cookiesFileName}</span>
               <button className="cookies-banner__btn cookies-banner__btn--change" onClick={handleSelectCookiesFile}>{t("common_change")}</button>
               <button className="cookies-banner__btn cookies-banner__btn--clear" onClick={handleClearCookies}>X</button>
             </div>
@@ -603,6 +610,9 @@ export const AddDownloadModal: React.FC = () => {
 
           {(analysis || playlistResult) && (
             <div className="video-preview">
+              {analysis?.thumbnail && (
+                <img className="preview-thumbnail" src={analysis.thumbnail} alt="" />
+              )}
               <div className="preview-info">
                 <h3 className="preview-title">{playlistResult ? playlistResult.title : analysis!.title}</h3>
                 <div className="preview-meta">
@@ -662,8 +672,8 @@ export const AddDownloadModal: React.FC = () => {
           {(analysis || playlistResult) && (
             <>
               <div className="tabs">
-                <button className={`tab ${activeTab === "video" ? "active" : ""}`} onClick={() => setActiveTab("video")}>Video</button>
-                <button className={`tab ${activeTab === "audio" ? "active" : ""}`} onClick={() => setActiveTab("audio")}>Audio</button>
+                <button className={`tab ${activeTab === "video" ? "active" : ""}`} onClick={() => setActiveTab("video")}>{t("modal_tabVideo")}</button>
+                <button className={`tab ${activeTab === "audio" ? "active" : ""}`} onClick={() => setActiveTab("audio")}>{t("modal_tabAudio")}</button>
               </div>
 
               {activeTab === "video" ? (
@@ -686,10 +696,10 @@ export const AddDownloadModal: React.FC = () => {
               )}
 
               <div className="form-group">
-                <label className="form-label">Save to</label>
+                <label className="form-label">{t("modal_saveTo")}</label>
                 <div className="folder-picker">
                   <input type="text" className="form-input folder-input" value={outputDir} readOnly />
-                  <button className="btn btn-secondary btn-browse" onClick={handleSelectFolder}>Browse</button>
+                  <button className="btn btn-secondary btn-browse" onClick={handleSelectFolder}>{t("modal_browse")}</button>
                 </div>
               </div>
             </>

@@ -6,8 +6,30 @@ import type {
   ContextMenuPosition,
   SortKey,
   SortDirection,
+  SpeedMode,
 } from "../types";
 import * as api from "../lib/tauri";
+import {
+  SPEED_MODE_KEY,
+  SPEED_LIMIT_SLOW_KEY,
+  SPEED_LIMIT_MEDIUM_KEY,
+  DEFAULT_SPEED_LIMIT_SLOW_KBPS,
+  DEFAULT_SPEED_LIMIT_MEDIUM_KBPS,
+} from "../lib/utils";
+
+function loadInitialSpeedMode(): SpeedMode {
+  const saved = localStorage.getItem(SPEED_MODE_KEY);
+  return saved === "slow" || saved === "medium" || saved === "fast" ? saved : "fast";
+}
+
+function loadInitialSpeedLimits(): { slow: number; medium: number } {
+  const slow = Number(localStorage.getItem(SPEED_LIMIT_SLOW_KEY));
+  const medium = Number(localStorage.getItem(SPEED_LIMIT_MEDIUM_KEY));
+  return {
+    slow: slow > 0 ? slow : DEFAULT_SPEED_LIMIT_SLOW_KBPS,
+    medium: medium > 0 ? medium : DEFAULT_SPEED_LIMIT_MEDIUM_KBPS,
+  };
+}
 
 interface DownloadStore {
   // State
@@ -24,6 +46,10 @@ interface DownloadStore {
   openPlaylistId: string | null;
   /** Filters the currently visible list (top-level or one playlist) by title. */
   searchQuery: string;
+  /** Global download-speed cap applied to every new download's format_args. Persisted to localStorage. */
+  speedMode: SpeedMode;
+  /** Editable KB/s caps for Slow/Medium mode (Settings). Fast has no cap. Persisted to localStorage. */
+  speedLimits: { slow: number; medium: number };
 
   // Actions
   setDownloads: (downloads: DownloadEntry[]) => void;
@@ -35,6 +61,8 @@ interface DownloadStore {
   setAddPanelOpen: (open: boolean) => void;
   setOpenPlaylistId: (id: string | null) => void;
   setSearchQuery: (query: string) => void;
+  setSpeedMode: (mode: SpeedMode) => void;
+  setSpeedLimits: (limits: Partial<{ slow: number; medium: number }>) => void;
   setContextMenu: (
     ctx: { position: ContextMenuPosition; downloadId: string } | null
   ) => void;
@@ -62,6 +90,8 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
   sortDirection: "desc",
   openPlaylistId: null,
   searchQuery: "",
+  speedMode: loadInitialSpeedMode(),
+  speedLimits: loadInitialSpeedLimits(),
 
   // Setters
   setDownloads: (downloads) => set({ downloads }),
@@ -108,6 +138,20 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
 
   setAddPanelOpen: (open) => set({ isAddPanelOpen: open }),
   setSearchQuery: (query) => set({ searchQuery: query }),
+
+  setSpeedMode: (mode) => {
+    localStorage.setItem(SPEED_MODE_KEY, mode);
+    set({ speedMode: mode });
+  },
+
+  setSpeedLimits: (limits) => {
+    set((state) => {
+      const next = { ...state.speedLimits, ...limits };
+      if (limits.slow !== undefined) localStorage.setItem(SPEED_LIMIT_SLOW_KEY, String(next.slow));
+      if (limits.medium !== undefined) localStorage.setItem(SPEED_LIMIT_MEDIUM_KEY, String(next.medium));
+      return { speedLimits: next };
+    });
+  },
 
   // Clears selection on navigation so a stale selection from one view
   // doesn't silently apply to rows the user can no longer see.

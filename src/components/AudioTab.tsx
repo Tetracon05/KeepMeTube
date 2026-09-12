@@ -38,9 +38,9 @@ export const AudioTab: React.FC<AudioTabProps> = ({
   return (
     <div className="tab-content">
       <div className="form-group">
-        <label className="form-label">Audio Quality</label>
+        <label className="form-label">{t("modal_audioQuality")}</label>
         {bitrateOptions.length === 0 && isPlaylistMode ? (
-          <p className="form-static-note">Best available quality (auto)</p>
+          <p className="form-static-note">{t("modal_bestQualityAuto")}</p>
         ) : (
           <select
             className="form-select"
@@ -53,14 +53,14 @@ export const AudioTab: React.FC<AudioTabProps> = ({
               </option>
             ))}
             {bitrateOptions.length === 0 && (
-              <option value="">No audio formats available</option>
+              <option value="">{t("modal_noAudioFormats")}</option>
             )}
           </select>
         )}
       </div>
 
       <div className="form-group">
-        <label className="form-label">Output Format</label>
+        <label className="form-label">{t("modal_outputFormat")}</label>
         <select
           className="form-select"
           value={selectedAudioContainer}

@@ -63,6 +63,18 @@ This removes the quarantine flag so the app opens normally from then on.
 
 Right-click KeepMeTube in Finder, choose **Open**, then confirm **Open** in the dialog. This bypasses the warning once but will reappear on the next launch; the Terminal command above is the permanent fix.
 
+### Note for Windows: "Windows protected your PC" (SmartScreen)
+
+The first time you run the installer, SmartScreen may show a blue screen saying "Windows protected your PC."
+
+**Why this happens**
+
+SmartScreen flags installers that aren't code-signed with a certificate that has built up reputation with Microsoft. A code-signing certificate costs money on an ongoing basis, which this project doesn't have yet. The warning applies to the installer file, not to KeepMeTube itself.
+
+**How to proceed**
+
+Click **More info**, then **Run anyway**. This only appears once per downloaded installer — it won't reappear once KeepMeTube is installed and you're launching it from the Start Menu.
+
 ---
 
 ## Supported Sites
@@ -233,4 +245,8 @@ sudo pacman -S ffmpeg        # Arch
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
+
+This covers KeepMeTube's own code only. Bundled third-party binaries keep their own licenses:
+- **ffmpeg** — the prebuilt binaries come from [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static), which are GPL-licensed (they include libx264). ffmpeg runs as a separate subprocess rather than being linked into KeepMeTube, so this doesn't change KeepMeTube's own license, but the ffmpeg binary itself remains subject to the GPL.
+- **yt-dlp** — distributed under the [Unlicense](https://github.com/yt-dlp/yt-dlp/blob/master/LICENSE) (public domain).

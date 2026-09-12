@@ -39,6 +39,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history + tags: the release notes step below reads the
+          # pushed tag's own annotated message, which a shallow checkout
+          # (the default) doesn't reliably preserve.
+          fetch-depth: 0
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -74,6 +79,20 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Extract release notes from tag
+        id: release_notes
+        shell: bash
+        run: |
+          notes=$(git tag -l --format='%(contents)' "${{ github.ref_name }}")
+          if [ -z "$notes" ]; then
+            notes="See commit history for a full list of changes in this release."
+          fi
+          {
+            echo 'body<<RELEASE_NOTES_EOF'
+            echo "$notes"
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -84,15 +103,13 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'KeepMeTube ${{ github.ref_name }}'
           releaseBody: |
-            ## What's Changed
-
-            See commit history for a full list of changes in this release.
+            ${{ steps.release_notes.outputs.body }}
 
             ## Installation
 
             Download the installer corresponding to your operating system below:
-            - **macOS**: Download and open the `.dmg` file.
-            - **Windows**: Run the `.msi` or `.exe` installer.
+            - **macOS**: Download and open the `.dmg` file. If macOS says the app "is damaged and can't be opened," see [Note for macOS](https://github.com/Tetracon05/KeepMeTube#note-for-macos-fixing-the-damaged-application-warning) in the README for the one-line fix.
+            - **Windows**: Run the `.msi` or `.exe` installer. If SmartScreen shows "Windows protected your PC," click **More info** → **Run anyway** (see [Note for Windows](https://github.com/Tetracon05/KeepMeTube#note-for-windows-windows-protected-your-pc-smartscreen) in the README).
             - **Linux**: Run the `.AppImage` file.
           releaseDraft: false
           # Must stay false: the in-app updater's endpoint is

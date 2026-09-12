@@ -5,6 +5,7 @@ import { useMacMenuEvents } from "./hooks/useMacMenuEvents";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { TopBar } from "./components/TopBar";
 import { DownloadList } from "./components/DownloadList";
+import { SpeedModeBar } from "./components/SpeedModeBar";
 import { AddDownloadModal } from "./components/AddDownloadModal";
 import { RenameDialog } from "./components/RenameDialog";
 import { ConfirmDialog } from "./components/ConfirmDialog";
@@ -122,6 +123,7 @@ function App() {
     <div className="app-container">
       <TopBar onOpenSettings={() => setSettingsOpen(true)} />
       <DownloadList />
+      <SpeedModeBar />
       <AddDownloadModal />
       <RenameDialog />
       <ConfirmDialog />

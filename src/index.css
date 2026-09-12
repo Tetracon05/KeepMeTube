@@ -43,6 +43,9 @@
   --sky: #2f6a80;
   --sky-wash: rgba(47, 106, 128, 0.12);
 
+  --amber: #9c7a1f;
+  --amber-wash: rgba(156, 122, 31, 0.12);
+
   /* Radii — small and mechanical, not soft-app rounded */
   --radius-xs: 3px;
   --radius-sm: 5px;
@@ -108,6 +111,9 @@
 
   --sky: #86bdd2;
   --sky-wash: rgba(134, 189, 210, 0.16);
+
+  --amber: #d9b54a;
+  --amber-wash: rgba(217, 181, 74, 0.16);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.4), 0 10px 24px -10px rgba(0, 0, 0, 0.55);
@@ -449,7 +455,7 @@ body {
   width: 10%;
 }
 .th-size {
-  width: 100px;
+  width: 140px;
 }
 .th-date {
   width: 150px;
@@ -560,6 +566,10 @@ body {
 
 .kind-icon {
   font-size: 0.8rem;
+}
+
+.cell-size {
+  white-space: nowrap;
 }
 
 .size-text {
@@ -1032,6 +1042,16 @@ body {
   border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
   border: 1px solid var(--line);
+}
+
+.preview-thumbnail {
+  width: 120px;
+  height: 68px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  object-fit: cover;
 }
 
 .preview-info {
@@ -2394,4 +2414,108 @@ body {
   font-size: 0.8rem;
   color: var(--rust);
   font-weight: 500;
+}
+
+/* ===== Speed Mode Bar (bottom of main screen) ===== */
+.speed-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+}
+
+.speed-mode-bar__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+
+.speed-mode-bar__options {
+  display: flex;
+  gap: 6px;
+}
+
+.speed-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-1);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.speed-mode-btn:hover {
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+
+.speed-mode-btn__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ink-2);
+}
+
+.speed-mode-btn--slow .speed-mode-btn__dot {
+  background: var(--rust);
+}
+
+.speed-mode-btn--medium .speed-mode-btn__dot {
+  background: var(--amber);
+}
+
+.speed-mode-btn--fast .speed-mode-btn__dot {
+  background: var(--moss);
+}
+
+.speed-mode-btn--slow.speed-mode-btn--active {
+  color: var(--rust);
+  border-color: var(--rust);
+  background: var(--rust-wash);
+}
+
+.speed-mode-btn--medium.speed-mode-btn--active {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-wash);
+}
+
+.speed-mode-btn--fast.speed-mode-btn--active {
+  color: var(--moss);
+  border-color: var(--moss);
+  background: var(--moss-wash);
+}
+
+/* ===== Settings — speed limit inputs ===== */
+.settings-speed-limits {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.settings-speed-limit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.settings-speed-limit-field label {
+  font-size: 0.8rem;
+  color: var(--ink-1);
 }

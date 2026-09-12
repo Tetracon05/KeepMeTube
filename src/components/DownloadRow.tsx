@@ -100,9 +100,9 @@ export const DownloadRow: React.FC<DownloadRowProps> = React.memo(function Downl
       onContextMenu={(e) => onContextMenu(e, download.id)}
       title={
         isDraggable
-          ? "Dosyayı sürükleyerek Dosya Gezgini'ne kopyalayabilirsiniz"
+          ? t("row_dragHint")
           : download.status !== "completed"
-          ? "İndirme tamamlandığında sürükleyebilirsiniz"
+          ? t("row_dragHintPending")
           : undefined
       }
     >

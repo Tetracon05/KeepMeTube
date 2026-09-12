@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { useShallow } from "zustand/react/shallow";
 import { useLanguage } from "../hooks/useLanguage";
 import { LANGUAGES, LangCode, setLanguage } from "../lib/i18n";
 import * as api from "../lib/tauri";
+import { useDownloadStore } from "../store/useDownloadStore";
 import type { AppUpdateInfo, UpdateCheckResult } from "../types";
 import {
   IconShield,
@@ -16,6 +18,7 @@ import {
   IconFolderOpen,
   IconDownload,
   IconFile,
+  IconZap,
 } from "./Icons";
 import { UpdateCheckControls } from "./UpdateCheckControls";
 import { DEFAULT_DOWNLOAD_DIR_KEY, FILENAME_TEMPLATE_KEY, DEFAULT_FILENAME_TEMPLATE } from "../lib/utils";
@@ -53,6 +56,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onCheckUpdates,
 }) => {
   const { t, lang } = useLanguage();
+  const { speedLimits, setSpeedLimits } = useDownloadStore(
+    useShallow((s) => ({ speedLimits: s.speedLimits, setSpeedLimits: s.setSpeedLimits }))
+  );
+  // Local text mirrors of the numeric store values — a plain `value={speedLimits.slow}`
+  // binding would snap back to the last valid number the instant the field is fully
+  // cleared (parseInt("") is NaN, so the guarded store update is skipped but React
+  // still re-renders the input from the unchanged store value), making it impossible
+  // to backspace-and-retype. Keeping local state lets the field show whatever the
+  // user is mid-typing and only commits upstream once it parses to a positive number.
+  const [slowLimitInput, setSlowLimitInput] = useState(String(speedLimits.slow));
+  const [mediumLimitInput, setMediumLimitInput] = useState(String(speedLimits.medium));
 
   const [cookiesFile, setCookiesFile] = useState<string>(
     () => localStorage.getItem("yt-cookies-file") || ""
@@ -95,7 +109,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           { name: "Cookies", extensions: ["txt"] },
           { name: "All files", extensions: ["*"] },
         ],
-        title: "Select cookies.txt exported from your browser",
+        title: t("modal_selectCookiesDialogTitle"),
       });
       if (sel && typeof sel === "string") {
         setCookiesFile(sel);
@@ -235,6 +249,49 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
+          </section>
+
+          <div className="settings-divider" />
+
+          {/* ── Section: Download Speed Limits ─────── */}
+          <section className="settings-section">
+            <h3 className="settings-section__title"><IconZap size={16} /> {t("settings_speedLimits")}</h3>
+            <p className="settings-section__desc">{t("settings_speedLimitsDesc")}</p>
+
+            <div className="settings-speed-limits">
+              <div className="settings-speed-limit-field">
+                <label htmlFor="speed-limit-slow">{t("settings_speedLimitSlow")}</label>
+                <input
+                  id="speed-limit-slow"
+                  type="number"
+                  min={1}
+                  className="form-input"
+                  value={slowLimitInput}
+                  onChange={(e) => {
+                    setSlowLimitInput(e.target.value);
+                    const value = parseInt(e.target.value, 10);
+                    if (value > 0) setSpeedLimits({ slow: value });
+                  }}
+                  onBlur={() => setSlowLimitInput(String(speedLimits.slow))}
+                />
+              </div>
+              <div className="settings-speed-limit-field">
+                <label htmlFor="speed-limit-medium">{t("settings_speedLimitMedium")}</label>
+                <input
+                  id="speed-limit-medium"
+                  type="number"
+                  min={1}
+                  className="form-input"
+                  value={mediumLimitInput}
+                  onChange={(e) => {
+                    setMediumLimitInput(e.target.value);
+                    const value = parseInt(e.target.value, 10);
+                    if (value > 0) setSpeedLimits({ medium: value });
+                  }}
+                  onBlur={() => setMediumLimitInput(String(speedLimits.medium))}
+                />
+              </div>
+            </div>
           </section>
 
           <div className="settings-divider" />

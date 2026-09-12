@@ -1,7 +1,24 @@
-import type { DownloadKind } from "../types";
+import type { DownloadKind, SpeedMode } from "../types";
 
 /** localStorage key for the user's custom default download folder (Settings). */
 export const DEFAULT_DOWNLOAD_DIR_KEY = "default-download-dir";
+
+/** localStorage keys for the download speed mode + its editable Slow/Medium caps (Settings). */
+export const SPEED_MODE_KEY = "download-speed-mode";
+export const SPEED_LIMIT_SLOW_KEY = "speed-limit-slow-kbps";
+export const SPEED_LIMIT_MEDIUM_KEY = "speed-limit-medium-kbps";
+export const DEFAULT_SPEED_LIMIT_SLOW_KBPS = 512;
+export const DEFAULT_SPEED_LIMIT_MEDIUM_KBPS = 4096;
+
+/** Resolves the active speed mode to a `--limit-rate` value in KB/s, or null for unlimited (Fast). */
+export function getSpeedLimitKbps(
+  mode: SpeedMode,
+  limits: { slow: number; medium: number }
+): number | null {
+  if (mode === "slow") return limits.slow;
+  if (mode === "medium") return limits.medium;
+  return null;
+}
 
 /**
  * Format bytes into a human-readable string
@@ -120,10 +137,13 @@ export function buildFormatArgs(opts: {
   embedThumbnail?: boolean;
   /** Embed title/artist/etc. metadata into the file (needs ffmpeg, already bundled). */
   embedMetadata?: boolean;
+  /** Caps yt-dlp's transfer rate via `--limit-rate`; null/undefined means unlimited (Fast mode). */
+  limitRateKbps?: number | null;
 }): { formatArgs: string[]; kind: DownloadKind } {
   const extras: string[] = [];
   if (opts.embedMetadata) extras.push("--embed-metadata");
   if (opts.embedThumbnail) extras.push("--embed-thumbnail");
+  if (opts.limitRateKbps) extras.push("--limit-rate", `${opts.limitRateKbps}K`);
 
   if (opts.isAudio) {
     const formatArgs = ["-x", "--audio-format", opts.container, ...extras];

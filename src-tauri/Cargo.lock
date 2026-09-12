@@ -2065,7 +2065,7 @@ dependencies = [
 
 [[package]]
 name = "keepmetube"
-version = "26.2.0"
+version = "26.3.0"
 dependencies = [
  "chrono",
  "dirs",
